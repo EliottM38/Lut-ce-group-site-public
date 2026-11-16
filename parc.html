@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notre parc — Lutèce Group</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="index.html" class="brand">
+    <span class="brand-mark">L</span>
+    <span>LUTÈCE <strong>GROUP</strong></span>
+  </a>
+  <button class="menu-button" id="menuButton" aria-label="Ouvrir le menu">☰</button>
+  <nav class="main-nav" id="mobileNav">
+    <a href="index.html">Accueil</a>
+    <a href="alliance.html">L'alliance</a>
+    <a href="parc.html" class="active">Notre parc</a>
+    <a href="exploitation.html">Exploitation</a>
+    <a href="financement.html">Financement</a>
+    <a href="directives.html">Directives</a>
+    <a href="contact.html" class="nav-contact">Nous rejoindre ↗</a>
+  </nav>
+</header>
+
+<main>
+  <section class="page-hero">
+    <span class="eyebrow">PÔLE LOCATION · NOTRE FLOTTE</span>
+    <h1>Un parc pensé<br>pour <em>vos besoins.</em></h1>
+    <p>Découvrez les véhicules disponibles au sein de notre flotte et consultez leurs caractéristiques.</p>
+  </section>
+
+  <section class="catalogue-section section-padding">
+    <div class="catalogue-heading">
+      <div>
+        <span class="eyebrow">CATALOGUE DES VÉHICULES</span>
+        <h2>Notre <em>flotte.</em></h2>
+      </div>
+      <div id="fleetCount" class="fleet-count">Chargement du catalogue…</div>
+    </div>
+
+    <div class="fleet-controls">
+      <div class="category-filters">
+        <button class="filter-button active" data-category="Tous">Tous</button>
+        <button class="filter-button" data-category="Mini">Mini</button>
+        <button class="filter-button" data-category="Midi">Midi</button>
+        <button class="filter-button" data-category="Standards">Standards</button>
+        <button class="filter-button" data-category="Articulés">Articulés</button>
+        <button class="filter-button" data-category="BHNS">BHNS</button>
+        <button class="filter-button" data-category="Cars & LE">Cars & LE</button>
+      </div>
+
+      <div class="search-controls">
+        <input type="search" id="fleetSearch" placeholder="Rechercher un véhicule, une marque…">
+        <select id="fleetStatus">
+          <option value="">Tous les statuts</option>
+          <option value="Disponible">Disponible</option>
+          <option value="En prépa loc">En prépa loc</option>
+          <option value="Aux ateliers">Aux ateliers</option>
+          <option value="En location">En location</option>
+        </select>
+      </div>
+    </div>
+
+    <p id="fleetUpdated" class="fleet-updated"></p>
+    <div id="vehicleGrid" class="vehicle-grid">
+      <div class="empty-state">
+        <strong>Catalogue en cours de préparation</strong>
+        Les données du parc seront affichées ici.
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <span class="eyebrow">UNE DEMANDE DE LOCATION ?</span>
+    <h2>Votre prochain véhicule<br>se trouve peut-être <em>ici.</em></h2>
+    <a href="location.html" class="button button-gold">CONSULTER LES CONDITIONS ↗</a>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-brand">LUTÈCE <strong>GROUP</strong></div>
+  <p>Une alliance au service du transport de voyageurs.</p>
+  <div class="footer-links">
+    <a href="index.html">Accueil</a>
+    <a href="location.html">Location</a>
+    <a href="contact.html">Contact</a>
+  </div>
+  <small>© 2026 Lutèce Group — Tous droits réservés.</small>
+</footer>
+
+</body>
+</html>
