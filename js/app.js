@@ -1,13 +1,4 @@
-/* =========================================================
-   LUTÈCE GROUP — SCRIPT PRINCIPAL
-   Navigation, accordéons, catalogue et fiches véhicules
-   ========================================================= */
 
-/* CONFIGURATION GOOGLE SHEETS
-   Les GID des six onglets sont à renseigner.
-   Pour les trouver : ouvrir chaque onglet du Google Sheet
-   et récupérer le nombre situé après gid= dans l'URL.
-*/
 const SHEET = {
   publishedId: "2PACX-1vROu3RCHzL0ghXoz3KjdrsetZRBv_Purve375qpNmYrPw3dYCeUIClozbvsG6uKtVp9CtiYVcCghUpo",
   tabs: {
@@ -20,27 +11,27 @@ const SHEET = {
   }
 };
 
-const $ = id => document.getElementById(id);
-
 let vehicles = [];
 let selectedCategory = "Tous";
-let fleetLoading = false;
+let loadingFleet = false;
 
-const safe = value =>
-  String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  }[char]));
+const $ = id => document.getElementById(id);
 
-const normalize = value =>
-  String(value ?? "")
+const safe = value => String(value ?? "").replace(/[&<>"']/g, char => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;"
+}[char]));
+
+function normalize(value) {
+  return String(value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
+}
 
 const statusClass = status => ({
   "Disponible": "status-disponible",
@@ -50,9 +41,7 @@ const statusClass = status => ({
 }[String(status ?? "").trim()] || "");
 
 
-/* =========================================================
-   NAVIGATION
-   ========================================================= */
+/* NAVIGATION */
 
 function setupNavigation() {
   const button = $("menuButton");
@@ -60,22 +49,23 @@ function setupNavigation() {
 
   if (!button || !nav) return;
 
-  const closeMenu = () => {
+  function closeMenu() {
     nav.classList.remove("open");
     button.setAttribute("aria-expanded", "false");
     button.setAttribute("aria-label", "Ouvrir le menu");
     button.textContent = "☰";
-  };
+  }
 
-  const openMenu = () => {
+  function openMenu() {
     nav.classList.add("open");
     button.setAttribute("aria-expanded", "true");
     button.setAttribute("aria-label", "Fermer le menu");
     button.textContent = "✕";
-  };
+  }
 
-  button.setAttribute("aria-expanded", "false");
+  button.setAttribute("type", "button");
   button.setAttribute("aria-controls", "mobileNav");
+  button.setAttribute("aria-expanded", "false");
 
   button.addEventListener("click", () => {
     if (nav.classList.contains("open")) {
@@ -107,7 +97,6 @@ function setupNavigation() {
     if (window.innerWidth > 800) closeMenu();
   });
 
-  // Détection automatique de la page active
   const currentPage = location.pathname.split("/").pop() || "index.html";
 
   nav.querySelectorAll("a").forEach(link => {
@@ -124,9 +113,7 @@ function setupNavigation() {
 }
 
 
-/* =========================================================
-   ACCORDÉONS
-   ========================================================= */
+/* ACCORDEONS */
 
 function setupAccordions() {
   document.querySelectorAll(".rule-question").forEach(button => {
@@ -134,17 +121,14 @@ function setupAccordions() {
       const item = button.closest(".rule-item");
       if (!item) return;
 
-      const isOpen = item.classList.toggle("open");
-
-      button.setAttribute("aria-expanded", String(isOpen));
+      const opened = item.classList.toggle("open");
+      button.setAttribute("aria-expanded", String(opened));
     });
   });
 }
 
 
-/* =========================================================
-   LECTURE CSV GOOGLE SHEETS
-   ========================================================= */
+/* LECTURE CSV */
 
 function parseCSV(text) {
   const rows = [];
@@ -189,25 +173,23 @@ function parseCSV(text) {
 }
 
 
-/* =========================================================
-   CONVERSION DES LIGNES DU TABLEAU
-   ========================================================= */
+/* CONVERSION DES DONNEES */
 
 function convertRows(rows, category) {
   if (!rows || rows.length < 2) return [];
 
   const headers = rows[0].map(normalize);
 
-  const findColumn = (...names) => {
+  function findColumn(...names) {
     for (const name of names) {
       const index = headers.indexOf(normalize(name));
       if (index !== -1) return index;
     }
     return -1;
-  };
+  }
 
   const columns = {
-    number: findColumn("Numéro de Parc", "Numéro de Parc Réparation prévue"),
+    number: findColumn("Numéro de Parc Réparation prévue", "Numéro de Parc"),
     brand: findColumn("Marque"),
     model: findColumn("Modèle"),
     fuel: findColumn("Motorisation"),
@@ -224,10 +206,10 @@ function convertRows(rows, category) {
     workshop: findColumn("OPTIONS ATELIER")
   };
 
-  const getValue = (row, key) => {
+  function getValue(row, key) {
     const index = columns[key];
     return index >= 0 ? String(row[index] ?? "").trim() : "";
-  };
+  }
 
   return rows.slice(1).map(row => ({
     category,
@@ -250,12 +232,10 @@ function convertRows(rows, category) {
 }
 
 
-/* =========================================================
-   CHARGEMENT DU PARC
-   ========================================================= */
+/* CHARGEMENT DU PARC */
 
 async function loadFleet() {
-  if (fleetLoading) return false;
+  if (loadingFleet) return false;
 
   const grid = $("vehicleGrid");
   const count = $("fleetCount");
@@ -264,22 +244,23 @@ async function loadFleet() {
   const configured = Object.entries(SHEET.tabs)
     .filter(([, gid]) => String(gid).trim() !== "");
 
-  if (configured.length === 0) {
+  if (!configured.length) {
     if (count) count.textContent = "Catalogue en attente de connexion";
+
     if (grid) {
       grid.innerHTML = `
         <div class="empty-state">
           <strong>Catalogue temporairement indisponible</strong>
-          Les onglets Google Sheets doivent encore être configurés.
+          Les identifiants des onglets Google Sheets ne sont pas encore configurés.
         </div>
       `;
     }
+
     return false;
   }
 
-  fleetLoading = true;
-
-  if (count) count.textContent = "Chargement du parc…";
+  loadingFleet = true;
+  if (count) count.textContent = "Chargement du catalogue…";
 
   const results = await Promise.allSettled(
     configured.map(async ([category, gid]) => {
@@ -292,13 +273,13 @@ async function loadFleet() {
         throw new Error(`Erreur de chargement : ${category}`);
       }
 
-      const csv = await response.text();
+      const text = await response.text();
 
-      if (csv.trim().startsWith("<!DOCTYPE") || csv.trim().startsWith("<html")) {
-        throw new Error(`Google Sheets n'a pas renvoyé de CSV pour ${category}`);
+      if (text.trim().startsWith("<")) {
+        throw new Error(`Réponse CSV invalide pour ${category}`);
       }
 
-      return convertRows(parseCSV(csv), category);
+      return convertRows(parseCSV(text), category);
     })
   );
 
@@ -314,24 +295,23 @@ async function loadFleet() {
     }
   });
 
-  // On conserve les données précédentes si le nouveau chargement échoue.
   if (imported.length > 0) {
     vehicles = imported;
   }
 
-  fleetLoading = false;
+  loadingFleet = false;
 
   if (vehicles.length > 0) {
     renderFleet();
 
     if (updated) {
       updated.textContent =
-        "Dernière actualisation : " +
+        "Données actualisées : " +
         new Date().toLocaleTimeString("fr-FR");
     }
 
     if (errors.length && count) {
-      count.textContent += ` · ${errors.length} onglet(s) indisponible(s)`;
+      count.textContent += ` · ${errors.length} onglet(s) en erreur`;
     }
 
     return true;
@@ -343,18 +323,17 @@ async function loadFleet() {
     grid.innerHTML = `
       <div class="empty-state">
         <strong>Aucun véhicule disponible</strong>
-        Vérifie la publication Google Sheets et les identifiants des onglets.
+        Vérifie la publication du tableau et les identifiants des onglets.
       </div>
     `;
   }
 
+  loadingFleet = false;
   return false;
 }
 
 
-/* =========================================================
-   AFFICHAGE ET FILTRES DU PARC
-   ========================================================= */
+/* AFFICHAGE DU CATALOGUE */
 
 function renderFleet() {
   const grid = $("vehicleGrid");
@@ -368,7 +347,7 @@ function renderFleet() {
       selectedCategory === "Tous" ||
       vehicle.category === selectedCategory;
 
-    const searchable = normalize([
+    const searchText = normalize([
       vehicle.number,
       vehicle.brand,
       vehicle.model,
@@ -376,17 +355,13 @@ function renderFleet() {
       vehicle.status
     ].join(" "));
 
-    const searchMatch = !search || searchable.includes(search);
-    const statusMatch = !status || vehicle.status === status;
-
-    return categoryMatch && searchMatch && statusMatch;
+    return categoryMatch &&
+      searchText.includes(search) &&
+      (!status || vehicle.status === status);
   });
 
   const count = $("fleetCount");
-
-  if (count) {
-    count.textContent = `${filtered.length} véhicule(s)`;
-  }
+  if (count) count.textContent = `${filtered.length} véhicule(s)`;
 
   if (!filtered.length) {
     grid.innerHTML = `
@@ -417,7 +392,6 @@ function renderFleet() {
           <span class="status ${statusClass(vehicle.status)}">
             ${safe(vehicle.status || "Statut inconnu")}
           </span>
-
           <span>VOIR LA FICHE ↗</span>
         </div>
       </div>
@@ -425,6 +399,8 @@ function renderFleet() {
   `).join("");
 }
 
+
+/* FILTRES */
 
 function setupFleet() {
   document.querySelectorAll("[data-category]").forEach(button => {
@@ -446,16 +422,13 @@ function setupFleet() {
 
   loadFleet();
 
-  // Actualisation automatique toutes les cinq minutes.
   window.setInterval(() => {
     loadFleet();
   }, 5 * 60 * 1000);
 }
 
 
-/* =========================================================
-   FICHE INDIVIDUELLE D'UN VÉHICULE
-   ========================================================= */
+/* FICHE VEHICULE */
 
 async function loadVehicleDetail() {
   const target = $("vehicleDetail");
@@ -481,13 +454,13 @@ async function loadVehicleDetail() {
     </div>
   `;
 
-  const loaded = await loadFleet();
+  const success = await loadFleet();
 
-  if (!loaded) {
+  if (!success) {
     target.innerHTML = `
       <div class="empty-state">
         <strong>Catalogue indisponible</strong>
-        Impossible de récupérer les informations du véhicule pour le moment.
+        Impossible de récupérer les informations du véhicule.
         <p><a href="parc.html" class="feature-link">RETOURNER AU PARC ↗</a></p>
       </div>
     `;
@@ -500,7 +473,7 @@ async function loadVehicleDetail() {
     target.innerHTML = `
       <div class="empty-state">
         <strong>Fiche non disponible</strong>
-        Ce véhicule n'a pas été trouvé dans les données actuellement connectées.
+        Ce véhicule n'a pas été trouvé dans les données connectées.
         <p><a href="parc.html" class="feature-link">RETOURNER AU PARC ↗</a></p>
       </div>
     `;
@@ -525,7 +498,6 @@ async function loadVehicleDetail() {
 
   target.innerHTML = `
     <div class="vehicle-detail">
-
       <div class="vehicle-detail-image"></div>
 
       <div>
@@ -534,7 +506,6 @@ async function loadVehicleDetail() {
         </div>
 
         <h1 class="detail-title">${safe(vehicle.model)}</h1>
-
         <div class="detail-brand">${safe(vehicle.brand)}</div>
 
         <p style="margin-top:20px">
@@ -555,16 +526,13 @@ async function loadVehicleDetail() {
         <a href="locations.html" class="button button-dark">
           DEMANDER UNE LOCATION ↗
         </a>
-
       </div>
     </div>
   `;
 }
 
 
-/* =========================================================
-   INITIALISATION
-   ========================================================= */
+/* INITIALISATION */
 
 document.addEventListener("DOMContentLoaded", () => {
   setupNavigation();
