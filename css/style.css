@@ -36,7 +36,6 @@ button { cursor: pointer; }
   width: min(1240px, calc(100% - 56px));
   margin: auto;
 }
-
 .eyebrow {
   color: var(--gold);
   text-transform: uppercase;
@@ -60,7 +59,7 @@ button { cursor: pointer; }
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 1000;
   background: rgba(255,255,255,.97);
   border-bottom: 1px solid #e9e8e3;
   backdrop-filter: blur(12px);
@@ -71,6 +70,7 @@ button { cursor: pointer; }
   align-items: center;
   justify-content: space-between;
   gap: 25px;
+  position: relative;
 }
 .logo {
   display: flex;
@@ -97,6 +97,8 @@ button { cursor: pointer; }
   letter-spacing: 2px;
   text-transform: uppercase;
 }
+
+/* NAVIGATION DESKTOP */
 .main-nav {
   display: flex;
   align-items: center;
@@ -120,6 +122,7 @@ button { cursor: pointer; }
 }
 .main-nav a:hover:after,
 .main-nav a.active:after { width: 100%; }
+
 .header-contact {
   padding: 12px 17px;
   color: white;
@@ -134,8 +137,9 @@ button { cursor: pointer; }
   border: 0;
   font-size: 25px;
   color: var(--navy);
+  padding: 8px;
 }
-.mobile-nav { display: none; }
+.mobile-nav { display: flex; }
 
 .hero {
   min-height: 570px;
@@ -216,6 +220,7 @@ button { cursor: pointer; }
   border-bottom: 1px solid var(--line);
 }
 .breadcrumb a:hover { color: var(--gold); }
+
 .page-intro {
   background: var(--paper);
   padding: 65px 0;
@@ -367,6 +372,7 @@ button { cursor: pointer; }
   color: white;
   border-color: var(--navy);
 }
+
 .vehicle-grid {
   display: grid;
   grid-template-columns: repeat(3,1fr);
@@ -515,7 +521,6 @@ button { cursor: pointer; }
   display: flex;
   justify-content: space-between;
 }
-
 .empty-state {
   grid-column: 1/-1;
   background: white;
@@ -530,28 +535,110 @@ button { cursor: pointer; }
   margin-bottom: 7px;
 }
 
+/* TABLEAUX ET CONTROLES */
+.catalog table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+.catalog th,
+.catalog td {
+  padding: 16px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.catalog th {
+  background: var(--navy);
+  color: white;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+}
+.catalog td { font-size: 13px; }
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+}
+
+/* TABLETTE */
 @media(max-width:1000px) {
   .main-nav { gap: 12px; }
   .main-nav a { font-size: 10px; }
   .header-contact { display: none; }
 }
+
+/* MOBILE */
 @media(max-width:800px) {
-  .main-nav { display: none; }
-  .menu-button { display: block; }
-  .mobile-nav.open {
+  .header-inner {
+    height: 72px;
+  }
+
+  .main-nav {
+    display: none;
+  }
+
+  .menu-button {
+    display: block;
+  }
+
+  /* Le HTML existant utilise main-nav + id mobileNav.
+     On ouvre le menu avec .open sans imposer une classe
+     supplémentaire dans les pages HTML. */
+  .main-nav.open {
     display: flex;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    width: 100%;
     flex-direction: column;
-    gap: 17px;
-    padding: 22px 28px;
+    align-items: stretch;
+    gap: 0;
+    padding: 12px 25px 22px;
     background: white;
     border-top: 1px solid var(--line);
+    box-shadow: 0 15px 30px rgba(16,29,43,.12);
     font-size: 13px;
     font-weight: 700;
+    z-index: 1001;
   }
-  .editorial-grid,.vehicle-detail { grid-template-columns: 1fr; }
-  .feature-grid,.vehicle-grid { grid-template-columns: 1fr 1fr; }
-  .footer-grid { grid-template-columns: 1fr 1fr; }
+
+  .main-nav.open a {
+    display: block;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .main-nav.open a:after {
+    display: none;
+  }
+
+  .main-nav.open .header-contact {
+    display: block;
+    margin-top: 12px;
+    padding: 13px;
+    text-align: center;
+    border: 0;
+  }
+
+  .editorial-grid,
+  .vehicle-detail {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-grid,
+  .vehicle-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
+
 @media(max-width:560px) {
   .container { width: calc(100% - 30px); }
   .topline .container { justify-content: center; }
@@ -559,10 +646,13 @@ button { cursor: pointer; }
   .section { padding: 65px 0; }
   .hero { min-height: 540px; }
   .hero h1 { letter-spacing: -1.5px; }
-  .feature-grid,.vehicle-grid,.plan-grid { grid-template-columns: 1fr; }
+  .feature-grid,
+  .vehicle-grid,
+  .plan-grid { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
   .stat:nth-child(2) { border: 0; }
   .footer-grid { grid-template-columns: 1fr 1fr; }
   .footer-grid > div:first-child { grid-column: 1/-1; }
   .footer-bottom { display: block; line-height: 2; }
+  .detail-table { grid-template-columns: 1fr; }
 }
