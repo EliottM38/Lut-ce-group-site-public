@@ -1,69 +1,43 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fiche véhicule — Lutèce Group</title>
-  <link rel="stylesheet" href="css/style.css">
-  <script src="js/app.js" defer></script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiche véhicule | Lutèce Group</title>
+<link rel="stylesheet" href="css/style.css"><script src="js/layout.js"></script><script src="js/data.js"></script>
 </head>
 <body>
-
-<div class="topline">
-  <div class="container">
-    <span>ALLIANCE FRANÇAISE · TRANSPORT DE VOYAGEURS</span>
-    <span>PÔLE LOCATION</span>
-  </div>
-</div>
-
-<header class="site-header">
-  <div class="container header-inner">
-    <a href="index.html" class="logo">
-      <span class="logo-symbol">L</span>
-      <span><span class="logo-name">LUTÈCE GROUP</span><br><span class="logo-caption">Alliance de transport</span></span>
-    </a>
-    <button class="menu-button" id="menuButton">☰</button>
-    <nav class="main-nav" id="mobileNav">
-      <a href="index.html">Accueil</a>
-      <a href="alliance.html">L'alliance</a>
-      <a href="parc.html" class="active">Notre parc</a>
-      <a href="exploitation.html">Exploitation</a>
-      <a href="financement.html">Financement</a>
-      <a href="directives.html">Directives</a>
-      <a href="contact.html" class="header-contact">NOUS REJOINDRE ↗</a>
-    </nav>
-  </div>
-</header>
-
+<div id="site-header"></div>
 <main>
-  <div class="page-intro">
-    <div class="container">
-      <span class="eyebrow">PÔLE LOCATION · FICHE VÉHICULE</span>
-      <h1>Nos véhicules <em>en détail.</em></h1>
-      <a href="parc.html" class="feature-link">← RETOUR AU CATALOGUE</a>
-    </div>
-  </div>
-
-  <section class="section">
-    <div class="container">
-      <div id="vehicleDetail">
-        <div class="empty-state">
-          <strong>Chargement de la fiche…</strong>
-          Les caractéristiques du véhicule sont en cours de récupération.
-        </div>
-      </div>
-    </div>
-  </section>
+<section class="page-hero"><div class="container">
+  <div class="crumbs"><a href="index.html">Accueil</a> / <a href="parc.html">Notre Parc</a> / Fiche véhicule</div>
+  <h1>Fiche véhicule</h1>
+</div></section>
+<section class="section"><div class="container"><div id="detail"><div class="empty"><strong>Chargement…</strong></div></div></div></section>
 </main>
-
-<footer class="site-footer">
-  <div class="container">
-    <div class="footer-bottom">
-      <span>© 2026 Lutèce Group</span>
-      <a href="parc.html">Retour au catalogue ↑</a>
-    </div>
-  </div>
-</footer>
-
+<div id="site-footer"></div>
+<script>
+(async () => {
+  const { loadFleet, esc, statusClass } = window.LG;
+  const t = document.getElementById('detail');
+  const id = new URLSearchParams(location.search).get('id');
+  const back = '<p style="margin-top:20px"><a class="link-arrow" href="parc.html">← Retour au parc</a></p>';
+  if (!id) { t.innerHTML = '<div class="empty"><strong>Véhicule non précisé</strong>' + back + '</div>'; return; }
+  try {
+    const { vehicles } = await loadFleet();
+    const v = vehicles.find(x => x.number === id);
+    if (!v) { t.innerHTML = '<div class="empty"><strong>Fiche introuvable</strong>Ce véhicule n\'est pas dans les données connectées.' + back + '</div>'; return; }
+    const f = [['Numéro de parc', v.number], ['Catégorie', v.category], ['Motorisation', v.fuel], ['Mise en service', v.year],
+      ['Date de retour', v.returnDate], ['État moteur', v.engine], ['État intérieur', v.interior], ['Places', v.seats],
+      ['Ventilation', v.ventilation], ['Portes', v.doors], ["Options d'usine", v.factory], ['Options SAEIV', v.saeiv], ['Options atelier', v.workshop]];
+    t.innerHTML = `<div class="detail"><div class="detail-photo"></div><div>
+      <span class="eyebrow">${esc(v.category)} · ${esc(v.number)}</span><h1>${esc(v.model)}</h1><div class="vehicle-brand">${esc(v.brand)}</div>
+      <p style="margin-top:16px"><span class="badge ${statusClass(v.status)}">${esc(v.status)}</span></p>
+      <div class="spec">${f.map(([l, x]) => `<div><span>${l}</span><strong>${esc(x || '—')}</strong></div>`).join('')}</div>
+      <a class="btn btn-dark" href="pole-location.html">Louer ce véhicule</a>
+      <p class="source-note">Source : ${esc(v.source)}</p>${back}</div></div>`;
+    document.title = v.model + ' | Lutèce Group';
+  } catch (e) { t.innerHTML = '<div class="empty"><strong>Catalogue indisponible</strong>' + back + '</div>'; }
+})();
+</script>
 </body>
 </html>

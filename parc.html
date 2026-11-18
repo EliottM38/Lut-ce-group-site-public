@@ -1,98 +1,64 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Notre parc — Lutèce Group</title>
-  <link rel="stylesheet" href="css/style.css">
-  <script src="js/app.js" defer></script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notre Parc | Lutèce Group</title>
+<link rel="stylesheet" href="css/style.css"><script src="js/layout.js"></script><script src="js/data.js"></script>
 </head>
 <body>
-
-<div class="topline">
-  <div class="container">
-    <span>ALLIANCE FRANÇAISE · TRANSPORT DE VOYAGEURS</span>
-    <span>PÔLE LOCATION</span>
-  </div>
-</div>
-
-<header class="site-header">
-  <div class="container header-inner">
-    <a href="index.html" class="logo">
-      <span class="logo-symbol">L</span>
-      <span><span class="logo-name">LUTÈCE GROUP</span><br><span class="logo-caption">Alliance de transport</span></span>
-    </a>
-    <button class="menu-button" id="menuButton">☰</button>
-    <nav class="main-nav" id="mobileNav">
-      <a href="index.html">Accueil</a>
-      <a href="alliance.html">L'alliance</a>
-      <a href="parc.html" class="active">Notre parc</a>
-      <a href="exploitation.html">Exploitation</a>
-      <a href="financement.html">Financement</a>
-      <a href="directives.html">Directives</a>
-      <a href="contact.html" class="header-contact">NOUS REJOINDRE ↗</a>
-    </nav>
-  </div>
-</header>
-
+<div id="site-header"></div>
 <main>
-  <div class="page-intro">
-    <div class="container">
-      <span class="eyebrow">PÔLE LOCATION · NOTRE FLOTTE</span>
-      <h1>Un parc pensé pour <em>vos besoins.</em></h1>
-      <p>Découvrez les véhicules référencés au sein de notre flotte et consultez leurs caractéristiques techniques et leur disponibilité.</p>
-    </div>
+<section class="page-hero"><div class="container">
+  <div class="crumbs"><a href="index.html">Accueil</a> / Service Location / Notre Parc</div>
+  <h1>Notre parc, en temps réel.</h1>
+  <p>Consultez les véhicules de l'alliance, leurs caractéristiques et leur disponibilité.</p>
+</div></section>
+
+<section class="section"><div class="container">
+  <div class="chips" id="chips">
+    <button class="chip active" data-cat="Tous">Tous</button>
+    <button class="chip" data-cat="Mini">Mini</button><button class="chip" data-cat="Midi">Midi</button>
+    <button class="chip" data-cat="Standards">Standards</button><button class="chip" data-cat="Articulés">Articulés</button>
+    <button class="chip" data-cat="BHNS">BHNS</button><button class="chip" data-cat="Cars & LE">Cars &amp; LE</button>
   </div>
-
-  <section class="section catalog">
-    <div class="container">
-      <div class="section-heading">
-        <span class="eyebrow">CATALOGUE DES VÉHICULES</span>
-        <h2>Notre <em>flotte.</em></h2>
-        <p id="fleetCount">Chargement du catalogue…</p>
-      </div>
-
-      <div class="category-list">
-        <button class="category-button active" data-category="Tous">Tous</button>
-        <button class="category-button" data-category="Mini">Mini</button>
-        <button class="category-button" data-category="Midi">Midi</button>
-        <button class="category-button" data-category="Standards">Standards</button>
-        <button class="category-button" data-category="Articulés">Articulés</button>
-        <button class="category-button" data-category="BHNS">BHNS</button>
-        <button class="category-button" data-category="Cars & LE">Cars & LE</button>
-      </div>
-
-      <div class="catalog-toolbar">
-        <input type="search" id="fleetSearch" placeholder="Rechercher une marque, un modèle, un numéro…">
-        <select id="fleetStatus">
-          <option value="">Tous les statuts</option>
-          <option value="Disponible">Disponible</option>
-          <option value="En prépa loc">En prépa loc</option>
-          <option value="Aux ateliers">Aux ateliers</option>
-          <option value="En location">En location</option>
-        </select>
-      </div>
-
-      <p class="sheet-note" id="fleetUpdated"></p>
-
-      <div id="vehicleGrid" class="vehicle-grid">
-        <div class="empty-state">
-          <strong>Catalogue en cours de préparation</strong>
-          Les données du parc seront affichées ici.
-        </div>
-      </div>
-    </div>
-  </section>
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="Rechercher un numéro, une marque, un modèle…">
+    <select id="st"><option value="">Tous les statuts</option><option>Disponible</option><option>En prépa loc</option><option>Aux ateliers</option><option>En location</option></select>
+  </div>
+  <p class="note" id="count">Chargement du catalogue…</p>
+  <div class="vehicle-grid" id="grid"></div>
+</div></section>
 </main>
-
-<footer class="site-footer">
-  <div class="container">
-    <div class="footer-bottom">
-      <span>© 2026 Lutèce Group</span>
-      <a href="index.html">Retour à l'accueil ↑</a>
-    </div>
-  </div>
-</footer>
-
+<div id="site-footer"></div>
+<script>
+(async () => {
+  const { loadFleet, norm, esc, statusClass } = window.LG;
+  const grid = document.getElementById('grid'), count = document.getElementById('count');
+  let cat = 'Tous', all = [];
+  function render() {
+    const q = norm(document.getElementById('q').value), st = document.getElementById('st').value;
+    const list = all.filter(v => (cat === 'Tous' || v.category === cat) && (!st || v.status === st) &&
+      norm([v.number, v.brand, v.model, v.fuel, v.status].join(' ')).includes(q));
+    count.textContent = list.length + ' véhicule(s)';
+    grid.innerHTML = list.length ? list.map(v => `
+      <a class="vehicle" href="vehicule.html?id=${encodeURIComponent(v.number)}">
+        <div class="vehicle-photo"></div>
+        <div class="vehicle-body"><span class="vehicle-ref">${esc(v.number)} · ${esc(v.category)}</span>
+          <h3>${esc(v.model || 'Modèle non renseigné')}</h3><div class="vehicle-brand">${esc(v.brand)}</div>
+          <div class="vehicle-foot"><span class="badge ${statusClass(v.status)}">${esc(v.status || 'Statut inconnu')}</span><span class="link-arrow">Fiche →</span></div></div></a>`).join('')
+      : '<div class="empty"><strong>Aucun véhicule à afficher</strong>Modifiez les filtres ou la recherche.</div>';
+  }
+  document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
+    cat = b.dataset.cat; document.querySelectorAll('.chip').forEach(x => x.classList.toggle('active', x === b)); render();
+  }));
+  document.getElementById('q').addEventListener('input', render);
+  document.getElementById('st').addEventListener('change', render);
+  try {
+    const r = await loadFleet(); all = r.vehicles;
+    if (!all.length) { count.textContent = 'Catalogue en cours de connexion'; grid.innerHTML = '<div class="empty"><strong>Catalogue bientôt disponible</strong>Les sources de données (API Transport Manager et Google Sheet) ne sont pas encore configurées.</div>'; return; }
+    render();
+  } catch (e) { count.textContent = 'Impossible de charger le catalogue'; }
+})();
+</script>
 </body>
 </html>

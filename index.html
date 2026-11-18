@@ -1,328 +1,98 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Lutèce Group accompagne les entreprises de transport de voyageurs : location, exploitation, financement et services aux membres.">
-  <meta name="theme-color" content="#101d2b">
-
-  <title>Lutèce Group — L'alliance du transport</title>
-
-  <link rel="stylesheet" href="css/style.css">
-  <script src="js/app.js" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Lutèce Group, opérateur de transport et prestataire de services : location de bus, exploitation et financement pour les entreprises membres.">
+<title>Lutèce Group — L'opérateur de transport de demain</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="js/layout.js"></script>
+<script src="js/data.js" defer></script>
 </head>
-
 <body>
+<div id="site-header"></div>
+<main>
 
-  <div class="topline">
-    <div class="container">
-      <span>ALLIANCE FRANÇAISE · TRANSPORT DE VOYAGEURS</span>
-      <span>DEPUIS 2026</span>
+<section class="hero" style="background-image:url('images/hero-bus.jpg')">
+  <div class="container">
+    <span class="eyebrow">Opérateur de transport · Prestataire de services</span>
+    <h1>L'alliance qui donne à votre réseau les moyens d'avancer.</h1>
+    <p>Lutèce Group est un opérateur de transport et un prestataire de service privé, spécialisé dans les services auxiliaires des transports terrestres. Location, exploitation et financement, au même endroit.</p>
+    <div class="hero-actions">
+      <a class="btn btn-gold" href="presentation.html">Découvrir l'alliance</a>
+      <a class="btn btn-outline" href="pole-location.html">Profiter de notre flotte</a>
     </div>
   </div>
+</section>
 
-  <header class="site-header">
-    <div class="container header-inner">
+<section class="stats"><div class="container stats-grid">
+  <div class="stat"><strong data-stat="vehicules">390+</strong><span>véhicules au parc</span></div>
+  <div class="stat"><strong>3</strong><span>pôles de services</span></div>
+  <div class="stat"><strong>2</strong><span>formules : Standard et Ultimate</span></div>
+  <div class="stat"><strong>2026</strong><span>une alliance en pleine dynamique</span></div>
+</div></section>
 
-      <a href="index.html" class="logo" aria-label="Lutèce Group — Accueil">
-        <span class="logo-symbol">L</span>
-        <span>
-          <span class="logo-name">LUTÈCE GROUP</span><br>
-          <span class="logo-caption">Alliance de transport</span>
-        </span>
-      </a>
-
-      <button
-        class="menu-button"
-        id="menuButton"
-        type="button"
-        aria-label="Ouvrir le menu"
-        aria-expanded="false"
-        aria-controls="mobileNav"
-      >☰</button>
-
-      <nav class="main-nav mobile-nav" id="mobileNav" aria-label="Navigation principale">
-        <a href="index.html" class="active" aria-current="page">Accueil</a>
-        <a href="services.html">L'alliance</a>
-        <a href="parc.html">Notre parc</a>
-        <a href="exploitation.html">Exploitation</a>
-        <a href="financement.html">Financement</a>
-        <a href="directives.html">Directives</a>
-        <a href="contact.html" class="header-contact">NOUS REJOINDRE ↗</a>
-      </nav>
-
+<section class="section">
+  <div class="container">
+    <div class="head"><span class="eyebrow">Nos services</span>
+      <h2>Trois pôles, un même accompagnement</h2>
+      <p class="lead">Chaque entreprise membre peut s'appuyer sur des services complémentaires pour développer son activité.</p></div>
+    <div class="cards">
+      <a class="card" href="pole-location.html">
+        <div class="card-img" style="background-image:url('images/location.jpg')"></div>
+        <div class="card-body"><span class="eyebrow">Service Location</span><h3>Pôle Location</h3>
+          <p>Une large flotte de bus à petits prix, du minibus à l'autocar, pour renforcer ou renouveler votre parc.</p>
+          <span class="link-arrow">Découvrir →</span></div></a>
+      <a class="card" href="pole-exploitation.html">
+        <div class="card-img" style="background-image:url('images/exploitation.jpg')"></div>
+        <div class="card-body"><span class="eyebrow">Service Exploitation</span><h3>Pôle Exploitation</h3>
+          <p>Conducteurs, mécaniciens, ateliers et service après location pour sécuriser votre exploitation.</p>
+          <span class="link-arrow">Découvrir →</span></div></a>
+      <a class="card" href="pole-financement.html">
+        <div class="card-img" style="background-image:url('images/financement.jpg')"></div>
+        <div class="card-body"><span class="eyebrow">Service Financement</span><h3>Pôle Financement</h3>
+          <p>Contrôles techniques, révisions, rénovations : des aides pour entretenir et faire évoluer votre flotte.</p>
+          <span class="link-arrow">Découvrir →</span></div></a>
     </div>
-  </header>
+  </div>
+</section>
 
-  <main>
-
-    <section class="hero">
-      <div
-        class="hero-image"
-        style="background-image:linear-gradient(90deg,#101d2b 0%,rgba(16,29,43,.75) 55%,rgba(16,29,43,.2)),url('images/hero-bus.jpg')"
-        aria-hidden="true"
-      ></div>
-
-      <div class="container">
-        <div class="hero-content">
-
-          <span class="eyebrow">L'ALLIANCE DU TRANSPORT DE VOYAGEURS</span>
-
-          <h1>
-            Ensemble,<br>
-            faisons avancer<br>
-            <em>le transport.</em>
-          </h1>
-
-          <p>
-            Lutèce Group accompagne les entreprises de transport
-            dans le développement, la gestion et l'exploitation
-            de leurs réseaux.
-          </p>
-
-          <div class="hero-actions">
-            <a href="services.html" class="button button-gold">
-              DÉCOUVRIR L'ALLIANCE ↗
-            </a>
-
-            <a href="parc.html" class="button button-outline">
-              EXPLORER NOTRE PARC
-            </a>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="container editorial-grid">
-
-        <div
-          class="editorial-image"
-          style="background-image:url('images/alliance.jpg')"
-          role="img"
-          aria-label="Activité de l'alliance"
-        ></div>
-
-        <div class="editorial-copy">
-          <span class="eyebrow">NOTRE RAISON D'ÊTRE</span>
-
-          <h2>Un partenaire pour aller <em>plus loin.</em></h2>
-
-          <p>
-            Parce que chaque entreprise possède ses propres ambitions,
-            Lutèce Group met à disposition de ses membres des services
-            complémentaires pour les accompagner au quotidien.
-          </p>
-
-          <p>
-            Location de véhicules, accompagnement financier,
-            exploitation et achats groupés : nous réunissons
-            nos compétences pour faire grandir chaque entreprise.
-          </p>
-
-          <a href="services.html" class="feature-link">
-            DÉCOUVRIR NOTRE ALLIANCE ↗
-          </a>
-        </div>
-
-      </div>
-    </section>
-
-    <section class="stats">
-      <div class="container stats-grid">
-
-        <div class="stat">
-          <strong>390+</strong>
-          <span>Véhicules au parc</span>
-        </div>
-
-        <div class="stat">
-          <strong>6</strong>
-          <span>Catégories de véhicules</span>
-        </div>
-
-        <div class="stat">
-          <strong>2026</strong>
-          <span>Nouvelle dynamique</span>
-        </div>
-
-        <div class="stat">
-          <strong>2</strong>
-          <span>Forfaits membres</span>
-        </div>
-
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="container">
-
-        <div class="section-heading">
-          <span class="eyebrow">NOS DOMAINES D'INTERVENTION</span>
-          <h2>Des services <em>complémentaires.</em></h2>
-          <p>
-            Un accompagnement organisé autour des besoins concrets
-            des entreprises membres.
-          </p>
-        </div>
-
-        <div class="feature-grid">
-
-          <article class="feature-card">
-            <div
-              class="feature-image"
-              style="background-image:url('images/location.jpg')"
-              role="img"
-              aria-label="Véhicules de transport"
-            ></div>
-
-            <div class="feature-body">
-              <span class="eyebrow">01 / LOCATION</span>
-              <h3>Un parc à votre disposition.</h3>
-              <p>Des véhicules adaptés à vos besoins et à votre activité.</p>
-              <a href="locations.html" class="feature-link">
-                DÉCOUVRIR ↗
-              </a>
-            </div>
-          </article>
-
-          <article class="feature-card">
-            <div
-              class="feature-image"
-              style="background-image:url('images/exploitation.jpg')"
-              role="img"
-              aria-label="Exploitation d'un réseau de transport"
-            ></div>
-
-            <div class="feature-body">
-              <span class="eyebrow">02 / EXPLOITATION</span>
-              <h3>Un soutien au quotidien.</h3>
-              <p>
-                Des solutions pour accompagner l'exploitation
-                de votre réseau.
-              </p>
-              <a href="exploitation.html" class="feature-link">
-                DÉCOUVRIR ↗
-              </a>
-            </div>
-          </article>
-
-          <article class="feature-card">
-            <div
-              class="feature-image"
-              style="background-image:url('images/financement.jpg')"
-              role="img"
-              aria-label="Financement et entretien des véhicules"
-            ></div>
-
-            <div class="feature-body">
-              <span class="eyebrow">03 / FINANCEMENT</span>
-              <h3>Développer votre flotte.</h3>
-              <p>
-                Un accompagnement pour l'entretien et l'évolution
-                de vos véhicules.
-              </p>
-              <a href="financement.html" class="feature-link">
-                DÉCOUVRIR ↗
-              </a>
-            </div>
-          </article>
-
-        </div>
-      </div>
-    </section>
-
-    <section class="dark-section">
-      <div class="container">
-
-        <span class="eyebrow">LE PÔLE LOCATION</span>
-
-        <h2>Un parc diversifié, des possibilités multiples.</h2>
-
-        <p>
-          Minibus, midibus, standards, articulés, BHNS et autocars :
-          découvrez les véhicules proposés par notre alliance.
-        </p>
-
-        <br>
-
-        <a href="parc.html" class="button button-gold">
-          DÉCOUVRIR LE PARC ↗
-        </a>
-
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="container">
-
-        <div class="contact-panel">
-          <span class="eyebrow">REJOINDRE LUTÈCE GROUP</span>
-
-          <h3>Construisons la suite ensemble.</h3>
-
-          <p>
-            Vous souhaitez développer votre entreprise avec l'appui
-            d'une alliance ? Présentez-nous votre projet.
-          </p>
-
-          <a href="contact.html" class="button button-dark">
-            PRENDRE CONTACT ↗
-          </a>
-        </div>
-
-      </div>
-    </section>
-
-  </main>
-
-  <footer class="site-footer">
-    <div class="container">
-
-      <div class="footer-grid">
-
-        <div>
-          <h4>LUTÈCE GROUP</h4>
-          <p>Une alliance au service du transport de voyageurs.</p>
-        </div>
-
-        <div>
-          <h4>L'ALLIANCE</h4>
-          <ul>
-            <li><a href="services.html">Présentation</a></li>
-            <li><a href="forfaits.html">Nos forfaits</a></li>
-            <li><a href="directives.html">Directives</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4>NOS SERVICES</h4>
-          <ul>
-            <li><a href="locations.html">Location</a></li>
-            <li><a href="exploitation.html">Exploitation</a></li>
-            <li><a href="financement.html">Financement</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4>INFORMATIONS</h4>
-          <ul>
-            <li><a href="parc.html">Notre parc</a></li>
-            <li><a href="services.html">Achats groupés</a></li>
-            <li><a href="contact.html">Contact</a></li>
-          </ul>
-        </div>
-
-      </div>
-
-      <div class="footer-bottom">
-        <span>© 2026 Lutèce Group — Tous droits réservés.</span>
-        <span>Alliance de transport de voyageurs</span>
-      </div>
-
+<section class="section soft">
+  <div class="container">
+    <div class="head center"><span class="eyebrow">Nos engagements</span>
+      <h2>Une alliance à taille humaine</h2></div>
+    <div class="pillars">
+      <div class="pillar"><h3>Proche de ses membres</h3><p>Une relation directe avec la direction, à l'écoute des besoins de chaque entreprise, récente ou expérimentée.</p></div>
+      <div class="pillar"><h3>Des règles claires</h3><p>Un règlement commun, des tarifs affichés et des conditions écrites pour que chacun sache à quoi s'en tenir.</p></div>
+      <div class="pillar"><h3>Un parc suivi</h3><p>Entretien, contrôles techniques et service après location centralisés pour les véhicules de l'alliance.</p></div>
     </div>
-  </footer>
+  </div>
+</section>
 
+<section class="section">
+  <div class="container">
+    <div class="head"><span class="eyebrow">Au quotidien</span>
+      <h2>Tout ce dont vous avez besoin, en quelques clics</h2></div>
+    <div class="services">
+      <a class="service" href="parc.html"><h3>Disponibilité du parc</h3><p>Consultez les véhicules disponibles, en préparation ou en location.</p><span class="link-arrow">Voir le parc →</span></a>
+      <a class="service" href="pole-location.html"><h3>Tarifs de location</h3><p>À la journée, à la semaine ou au mois, selon la catégorie de véhicule.</p><span class="link-arrow">Voir les tarifs →</span></a>
+      <a class="service" href="pole-exploitation.html"><h3>Service après location</h3><p>Une panne ? Le S.A.L suit vos incidents et vos immobilisations.</p><span class="link-arrow">En savoir plus →</span></a>
+      <a class="service" href="pole-financement.html"><h3>Aides à l'entretien</h3><p>CT, révisions, FCO et rénovations pris en charge selon votre formule.</p><span class="link-arrow">Voir les aides →</span></a>
+      <a class="service" href="forfaits.html"><h3>Standard ou Ultimate</h3><p>Choisissez le niveau d'accompagnement adapté à votre entreprise.</p><span class="link-arrow">Comparer →</span></a>
+      <a class="service" href="reglement.html"><h3>Le règlement</h3><p>Le cadre commun de l'alliance et les engagements de ses membres.</p><span class="link-arrow">Consulter →</span></a>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band" style="background-image:url('images/alliance.jpg')">
+  <div class="container">
+    <h2>Prêt à rejoindre Lutèce Group ?</h2>
+    <p>Présentez votre entreprise et vos projets à la direction de l'alliance.</p>
+    <a class="btn btn-gold" href="rejoindre.html">Nous rejoindre</a>
+  </div>
+</section>
+
+</main>
+<div id="site-footer"></div>
 </body>
 </html>
