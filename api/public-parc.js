@@ -186,12 +186,13 @@ export default async function handler(req, res) {
   const warnings = [];
 
   // 1) Base de données : app_config, tarifs, photos
-  let cfg = {}, tarifRows = [], photoRows = [];
+  let cfg = {}, tarifRows = [], photoRows = [], dbBase = '', dbH = null;
   if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + SUPABASE_SERVICE_KEY, Accept: 'application/json' };
     const base = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/';
+    dbBase = base; dbH = h;
     const [a, b, c] = await Promise.allSettled([
-      getJSON(base + 'app_config?select=key,value&key=in.(site_links,parc_sheet_urls)', h),
+      getJSON(base + 'app_config?select=key,value&key=in.(site_links,parc_sheet_urls,parc_cache)', h),
       getJSON(base + 'tarifs?select=key,value', h),
       getJSON(base + 'parc_photos?select=cle,storage_path,ordre&order=ordre.asc,created_at.asc', h)
     ]);
@@ -237,6 +238,21 @@ export default async function handler(req, res) {
     }
   } else {
     warnings.push('tm-config');
+  }
+
+  // Dernière liste TM valide conservée en base : évite un catalogue vide si TM est indisponible un instant
+  if (dbH) {
+    if (list.length) {
+      try {
+        await fetch(dbBase + 'app_config?on_conflict=key', {
+          method: 'POST', signal: AbortSignal.timeout(TIMEOUT_MS),
+          headers: { ...dbH, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify({ key: 'parc_cache', value: JSON.stringify({ t: Date.now(), list }) })
+        });
+      } catch (e) {}
+    } else if (cfg.parc_cache && Array.isArray(cfg.parc_cache.list) && cfg.parc_cache.list.length) {
+      list = cfg.parc_cache.list; sources.tm = true; warnings.push('tm: dernière liste connue (cache)');
+    }
   }
 
   // 3) Google Sheet(s) : liens stockés en base (aucune URL dans le code)
@@ -311,7 +327,7 @@ export default async function handler(req, res) {
     categories: CATEGORIES.map(c => ({ nom: c, quantite: vehicles.filter(v => v.categorie === c).length }))
   };
 
-  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=900');
+  res.setHeader('Cache-Control', vehicles.length ? 'public, s-maxage=120, stale-while-revalidate=600' : 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   return res.status(200).json({
     generated_at: new Date().toISOString(),
