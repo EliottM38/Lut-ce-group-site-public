@@ -49,7 +49,8 @@ function parseCSV(t) {
 async function getJSON(url, headers) {
   const r = await fetch(url, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) });
   if (!r.ok) throw new Error('HTTP ' + r.status);
-  return r.json();
+  const t = await r.text();
+  try { return JSON.parse(t); } catch (e) { throw new Error('réponse non JSON (' + (r.headers.get('content-type') || '?') + ')'); }
 }
 
 const asList = raw => Array.isArray(raw) ? raw
@@ -214,7 +215,7 @@ export default async function handler(req, res) {
   let enLocation = new Map();
   if (TM_API_KEY && TM_API_BASE) {
     const h = { Authorization: 'Bearer ' + TM_API_KEY, Accept: 'application/json' };
-    const base = TM_API_BASE.replace(/\/$/, '');
+    const base = (/^https?:\/\//i.test(TM_API_BASE.trim()) ? TM_API_BASE.trim() : 'https://' + TM_API_BASE.trim()).replace(/\/+$/, '');
     const [glob, loc] = await Promise.allSettled([
       getJSON(base + '/api/v1/vehicules?parc=global&limit=1000', h),
       getJSON(base + '/api/v1/vehicules?parc=location&limit=1000', h)
@@ -222,7 +223,7 @@ export default async function handler(req, res) {
     if (glob.status === 'fulfilled') {
       list = asList(glob.value).map(fromTM).filter(v => v.ref || v.modele);
       sources.tm = list.length > 0;
-    } else warnings.push('tm');
+    } else warnings.push('tm: ' + String(glob.reason && glob.reason.message || glob.reason).slice(0, 80));
     if (loc.status === 'fulfilled') {
       for (const raw of asList(loc.value)) {
         const ref = pick(raw, ['numero_parc', 'num_parc', 'n_parc', 'parc_numero', 'numero', 'immatriculation', 'id']);
