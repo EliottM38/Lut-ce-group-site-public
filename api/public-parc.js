@@ -225,17 +225,30 @@ export default async function handler(req, res) {
       getJSON(base + '/api/v1/vehicules?parc=global&limit=1000', h),
       getJSON(base + '/api/v1/vehicules?parc=location&limit=1000', h)
     ]);
+    const meta = r => (r && !Array.isArray(r) && typeof r === 'object')
+      ? Object.fromEntries(Object.entries(r).filter(([, v]) => ['number', 'boolean'].includes(typeof v) || (typeof v === 'string' && v.length < 40)).slice(0, 8)) : undefined;
+    const refOf = raw => pick(raw, ['numero_parc', 'num_parc', 'n_parc', 'parc_numero', 'numero', 'immatriculation', 'id']);
+    const byRefTM = new Map();
+    const diag = {};
     if (glob.status === 'fulfilled') {
-      list = asList(glob.value).map(fromTM).filter(v => v.ref || v.modele);
-      sources.tm = list.length > 0;
+      const items = asList(glob.value).map(fromTM).filter(v => v.ref || v.modele);
+      items.forEach(v => byRefTM.set(v.ref || Symbol(), v));
+      diag.global = items.length; diag.global_meta = meta(glob.value);
     } else warnings.push('tm[' + baseHost + ']: ' + String(glob.reason && glob.reason.message || glob.reason).slice(0, 80));
     locOk = loc.status === 'fulfilled';
     if (loc.status === 'fulfilled') {
-      for (const raw of asList(loc.value)) {
-        const ref = pick(raw, ['numero_parc', 'num_parc', 'n_parc', 'parc_numero', 'numero', 'immatriculation', 'id']);
-        if (ref) enLocation.set(ref, dateOf(pick(raw, ['date_fin', 'fin', 'retour'])));
+      const items = asList(loc.value);
+      diag.location = items.length; diag.location_meta = meta(loc.value);
+      for (const raw of items) {
+        const ref = refOf(raw);
+        const fin = dateOf(pick(raw, ['date_fin', 'fin', 'retour']));
+        if (ref) enLocation.set(ref, fin);
+        if (!byRefTM.has(ref)) { const v = fromTM(raw); if (v.ref || v.modele) byRefTM.set(v.ref || Symbol(), v); }
       }
-    }
+    } else warnings.push('tm-location: ' + String(loc.reason && loc.reason.message || loc.reason).slice(0, 80));
+    list = [...byRefTM.values()];
+    sources.tm = list.length > 0;
+    sources.tm_detail = diag;
   } else {
     warnings.push('tm-config');
   }
