@@ -63,7 +63,7 @@ function categorize(...hints) {
   const t = norm(hints.join(' '));
   if (/\bmini/.test(t)) return 'Minibus';
   if (/\bmidi/.test(t)) return 'Midibus';
-  if (/articul|double/.test(t)) return 'Articulés';
+  if (/articul|double|\bciti?aro\s*g\b|\bg\s*c2\b|\b(lion.?s city|urbino|solaris|sileo)\s*18\b|\b(eletta|e0[0-9]+)\s*g\b/.test(t)) return 'Articulés';
   if (/bhns|brt|\btram/.test(t)) return 'BHNS';
   if (/\bcar\b|autocar|\ble\b|low entry|intercit|tourisme/.test(t)) return 'LE & Cars';
   return 'Standards';
@@ -113,7 +113,7 @@ function fromTM(v) {
   return {
     ref: pick(v, ['numero_parc', 'num_parc', 'n_parc', 'parc_numero', 'numero', 'immatriculation', 'id']),
     marque, modele,
-    categorie: categorize(type, modele),
+    categorie: (Number(String(pick(v, ['places', 'nb_places', 'capacite', 'places_totales'])).replace(/\D/g, '')) >= 130 && categorize(type, modele) === 'Standards') ? 'Articulés' : categorize(type, modele),
     moteur: motorLabel(pick(v, ['motorisation', 'moteur', 'energie', 'carburant', 'type_moteur'])),
     annee: yearOf(pick(v, ['mise_en_service', 'date_mise_en_service', 'mes', 'annee', 'year', 'date_achat'])),
     places: pick(v, ['places', 'nb_places', 'capacite', 'places_totales']),
@@ -186,12 +186,13 @@ export default async function handler(req, res) {
   const warnings = [];
 
   // 1) Base de données : app_config, tarifs, photos
-  let cfg = {}, tarifRows = [], photoRows = [];
+  let cfg = {}, tarifRows = [], photoRows = [], dbBase = '', dbH = null;
   if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + SUPABASE_SERVICE_KEY, Accept: 'application/json' };
     const base = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/';
+    dbBase = base; dbH = h;
     const [a, b, c] = await Promise.allSettled([
-      getJSON(base + 'app_config?select=key,value&key=in.(site_links,parc_sheet_urls)', h),
+      getJSON(base + 'app_config?select=key,value&key=in.(site_links,parc_sheet_urls,parc_cache)', h),
       getJSON(base + 'tarifs?select=key,value', h),
       getJSON(base + 'parc_photos?select=cle,storage_path,ordre&order=ordre.asc,created_at.asc', h)
     ]);
@@ -213,6 +214,7 @@ export default async function handler(req, res) {
   // 2) API Transport Manager (clé uniquement côté serveur)
   let list = [];
   let enLocation = new Map();
+  let locOk = false;
   if (TM_API_KEY) {
     const h = { Authorization: 'Bearer ' + TM_API_KEY, Accept: 'application/json' };
     const baseRaw = (TM_API_BASE || 'https://transport-manager.net').trim(); // même hôte que le site de gestion ; surchargeable par TM_API_BASE
@@ -227,6 +229,7 @@ export default async function handler(req, res) {
       list = asList(glob.value).map(fromTM).filter(v => v.ref || v.modele);
       sources.tm = list.length > 0;
     } else warnings.push('tm[' + baseHost + ']: ' + String(glob.reason && glob.reason.message || glob.reason).slice(0, 80));
+    locOk = loc.status === 'fulfilled';
     if (loc.status === 'fulfilled') {
       for (const raw of asList(loc.value)) {
         const ref = pick(raw, ['numero_parc', 'num_parc', 'n_parc', 'parc_numero', 'numero', 'immatriculation', 'id']);
@@ -235,6 +238,21 @@ export default async function handler(req, res) {
     }
   } else {
     warnings.push('tm-config');
+  }
+
+  // Dernière liste TM valide conservée en base : évite un catalogue vide si TM est indisponible un instant
+  if (dbH) {
+    if (list.length) {
+      try {
+        await fetch(dbBase + 'app_config?on_conflict=key', {
+          method: 'POST', signal: AbortSignal.timeout(TIMEOUT_MS),
+          headers: { ...dbH, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify({ key: 'parc_cache', value: JSON.stringify({ t: Date.now(), list }) })
+        });
+      } catch (e) {}
+    } else if (cfg.parc_cache && Array.isArray(cfg.parc_cache.list) && cfg.parc_cache.list.length) {
+      list = cfg.parc_cache.list; sources.tm = true; warnings.push('tm: dernière liste connue (cache)');
+    }
   }
 
   // 3) Google Sheet(s) : liens stockés en base (aucune URL dans le code)
@@ -266,6 +284,7 @@ export default async function handler(req, res) {
   }
   const vehicles = [...byRef.values(), ...noRef];
   for (const v of vehicles) {
+    if (!v.statut && v.ref && locOk && !enLocation.has(v.ref) && sources.tm) v.statut = 'Disponible';
     if (!v.statut && v.ref && enLocation.has(v.ref)) { v.statut = 'En location'; v.retour = enLocation.get(v.ref) || ''; }
     v.cle = cleOf(v.marque, v.modele);
     if (v.statut !== 'En location') v.retour = '';
@@ -308,7 +327,7 @@ export default async function handler(req, res) {
     categories: CATEGORIES.map(c => ({ nom: c, quantite: vehicles.filter(v => v.categorie === c).length }))
   };
 
-  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=900');
+  res.setHeader('Cache-Control', vehicles.length ? 'public, s-maxage=120, stale-while-revalidate=600' : 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   return res.status(200).json({
     generated_at: new Date().toISOString(),
