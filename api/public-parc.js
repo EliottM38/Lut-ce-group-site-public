@@ -216,7 +216,9 @@ export default async function handler(req, res) {
   if (TM_API_KEY) {
     const h = { Authorization: 'Bearer ' + TM_API_KEY, Accept: 'application/json' };
     const baseRaw = (TM_API_BASE || 'https://transport-manager.net').trim(); // même hôte que le site de gestion ; surchargeable par TM_API_BASE
-    const base = (/^https?:\/\//i.test(baseRaw) ? baseRaw : 'https://' + baseRaw).replace(/\/+$/, '');
+    let base = (/^https?:\/\//i.test(baseRaw) ? baseRaw : 'https://' + baseRaw).replace(/\/+$/, '');
+    try { const u = new URL(base); base = u.origin; } catch (e) { base = 'https://transport-manager.net'; } // valeur invalide → hôte par défaut
+    const baseHost = base.replace(/^https?:\/\//, '');
     const [glob, loc] = await Promise.allSettled([
       getJSON(base + '/api/v1/vehicules?parc=global&limit=1000', h),
       getJSON(base + '/api/v1/vehicules?parc=location&limit=1000', h)
@@ -224,7 +226,7 @@ export default async function handler(req, res) {
     if (glob.status === 'fulfilled') {
       list = asList(glob.value).map(fromTM).filter(v => v.ref || v.modele);
       sources.tm = list.length > 0;
-    } else warnings.push('tm: ' + String(glob.reason && glob.reason.message || glob.reason).slice(0, 80));
+    } else warnings.push('tm[' + baseHost + ']: ' + String(glob.reason && glob.reason.message || glob.reason).slice(0, 80));
     if (loc.status === 'fulfilled') {
       for (const raw of asList(loc.value)) {
         const ref = pick(raw, ['numero_parc', 'num_parc', 'n_parc', 'parc_numero', 'numero', 'immatriculation', 'id']);
