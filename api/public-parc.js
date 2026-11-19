@@ -217,7 +217,7 @@ export default async function handler(req, res) {
     const h = { Authorization: 'Bearer ' + TM_API_KEY, Accept: 'application/json' };
     const baseRaw = (TM_API_BASE || 'https://transport-manager.net').trim(); // même hôte que le site de gestion ; surchargeable par TM_API_BASE
     let base = (/^https?:\/\//i.test(baseRaw) ? baseRaw : 'https://' + baseRaw).replace(/\/+$/, '');
-    try { const u = new URL(base); base = u.origin; } catch (e) { base = 'https://transport-manager.net'; } // valeur invalide → hôte par défaut
+    try { const u = new URL(base); base = /\.[a-z]{2,}$/i.test(u.hostname) ? u.origin : 'https://transport-manager.net'; } catch (e) { base = 'https://transport-manager.net'; } // valeur invalide (ex. une clé collée par erreur) → hôte par défaut
     const baseHost = base.replace(/^https?:\/\//, '');
     const [glob, loc] = await Promise.allSettled([
       getJSON(base + '/api/v1/vehicules?parc=global&limit=1000', h),
