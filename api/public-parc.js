@@ -213,9 +213,10 @@ export default async function handler(req, res) {
   // 2) API Transport Manager (clé uniquement côté serveur)
   let list = [];
   let enLocation = new Map();
-  if (TM_API_KEY && TM_API_BASE) {
+  if (TM_API_KEY) {
     const h = { Authorization: 'Bearer ' + TM_API_KEY, Accept: 'application/json' };
-    const base = (/^https?:\/\//i.test(TM_API_BASE.trim()) ? TM_API_BASE.trim() : 'https://' + TM_API_BASE.trim()).replace(/\/+$/, '');
+    const baseRaw = (TM_API_BASE || 'https://transport-manager.net').trim(); // même hôte que le site de gestion ; surchargeable par TM_API_BASE
+    const base = (/^https?:\/\//i.test(baseRaw) ? baseRaw : 'https://' + baseRaw).replace(/\/+$/, '');
     const [glob, loc] = await Promise.allSettled([
       getJSON(base + '/api/v1/vehicules?parc=global&limit=1000', h),
       getJSON(base + '/api/v1/vehicules?parc=location&limit=1000', h)
