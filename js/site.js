@@ -8,6 +8,7 @@
 'use strict';
 const BASE = (() => { try { const s = document.currentScript && document.currentScript.src; return s ? new URL('../', s).pathname : './'; } catch (e) { return './'; } })();
 const API = '/api/public-parc';
+const API_SITE = '/api/public-site';
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const FINE = matchMedia('(hover:hover) and (pointer:fine)').matches;
 const root = document.documentElement;
@@ -45,7 +46,8 @@ const MENU = [
   { t: 'Qui sommes-nous ?', cols: [{ h: 'L’alliance', l: [
     ['presentation.html', 'Présentation de Lutèce Group', 'Nos services, nos forfaits, nos conditions d’entrée'],
     ['reglement.html', 'Le règlement de l’Alliance', 'Les règles communes, de A à J'],
-    ['forfaits.html', 'Nos forfaits', 'Standard et Ultimate, côte à côte']] }] },
+    ['forfaits.html', 'Nos forfaits', 'Standard et Ultimate, côte à côte'],
+    ['articles.html', 'Actualités', 'Les articles et annonces de l’alliance']] }] },
   { t: 'Service Location', cols: [
     { h: 'Louer', l: [
       ['pole-location.html', 'Pôle Location', 'Tarifs, règles et Service Après Location'],
@@ -86,10 +88,10 @@ function footerHTML() {
     <div class="ftr-top">
       <div><a class="brand" href="${BASE}index.html"><span class="brand-mark">LG</span><span>Lutèce Group</span></a>
         <p>Opérateur de transport et prestataire de service privé, spécialisé dans les services auxiliaires des transports terrestres.</p></div>
-      <div><h4>Qui sommes-nous ?</h4><ul>${L('presentation.html', 'Présentation')}${L('reglement.html', 'Règlement de l’Alliance')}${L('forfaits.html', 'Nos forfaits')}${L('rejoindre.html', 'Nous rejoindre')}</ul></div>
+      <div><h4>Qui sommes-nous ?</h4><ul>${L('articles.html', 'Actualités')}${L('presentation.html', 'Présentation')}${L('reglement.html', 'Règlement de l’Alliance')}${L('forfaits.html', 'Nos forfaits')}${L('rejoindre.html', 'Nous rejoindre')}</ul></div>
       <div><h4>Service Location</h4><ul>${L('pole-location.html', 'Pôle Location')}${L('parc.html', 'Notre Parc')}${L('pole-location.html#tarifs', 'Tarifs de location')}${L('pole-location.html#sal', 'Service Après Location')}</ul></div>
       <div><h4>Exploitation &amp; Financement</h4><ul>${L('pole-exploitation.html', 'Pôle Exploitation')}${L('pole-exploitation.html#ateliers', 'Ateliers de l’Alliance')}${L('pole-financement.html', 'Pôle Financement')}${L('pole-financement.html#gold', 'Programme GOLD')}</ul></div>
-      <div><h4>Liens utiles</h4><ul>${K('forum', 'Forum Transport Manager')}${K('tm', 'Transport Manager')}${K('demande_location', 'Demande de location')}${K('sal', 'Formulaire S.A.L')}${K('intervention', 'Intervention atelier')}${K('remboursement', 'Demande de remboursement')}${K('disponibilites', 'Disponibilités du parc')}</ul></div>
+      <div><h4>Liens utiles</h4><ul>${K('forum', 'Forum Transport Manager')}${K('tm', 'Transport Manager')}${K('demande_location', 'Demande de location')}${K('sal', 'Formulaire S.A.L')}${K('intervention', 'Intervention atelier')}${K('remboursement', 'Demande de remboursement')}${K('disponibilites', 'Disponibilités du parc')}<span id="ftr-extra" style="display:contents"></span></ul></div>
     </div>
     <div class="ftr-bot"><span>© 2026 Lutèce Group</span><span>Site conçu dans le cadre du jeu Transport Manager</span></div>
   </div></footer>`;
@@ -165,6 +167,134 @@ function applyData(d) {
       if (v > 0) { el.dataset.count = v; el.dataset.suffix = ''; el.textContent = fmt(v); }
     });
   }
+}
+
+
+/* ------------------------------------------------------------ contenu éditorial (articles, pop-up, liens, Discord) */
+let siteP;
+function loadSite(slug) {
+  if (!slug && siteP) return siteP;
+  const p = (async () => {
+    const key = 'lg_site' + (slug ? '_' + slug : '');
+    try {
+      const c = JSON.parse(sessionStorage.getItem(key) || 'null');
+      if (c && Date.now() - c.t < 60000) return c.d;
+    } catch (e) {}
+    try {
+      const r = await fetch(API_SITE + (slug ? '?slug=' + encodeURIComponent(slug) : ''), { headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error(r.status);
+      const d = await r.json();
+      try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch (e) {}
+      return d;
+    } catch (e) { return null; }
+  })();
+  if (!slug) siteP = p;
+  return p;
+}
+
+const fmtDay = iso => { try { return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return ''; } };
+
+function applyLinks(s) {
+  if (!s || !s.links || !s.links.length) return;
+  const foot = s.links.filter(l => l.zone !== 'menu');
+  const slot = $('#ftr-extra');
+  if (slot) slot.innerHTML = foot.map(l => `<li><a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a></li>`).join('');
+  const men = s.links.filter(l => l.zone === 'menu');
+  const nav = $('.nav');
+  if (men.length && nav && !$('#nav-extra')) {
+    const div = document.createElement('div');
+    div.className = 'nav-i'; div.id = 'nav-extra';
+    div.innerHTML = `<button class="nav-b" type="button" aria-haspopup="true">Liens <i class="fa-solid fa-chevron-down"></i></button>
+      <div class="mega"><div class="mega-col"><h4>Liens utiles</h4>${men.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener"><b>${esc(l.label)}</b></a>`).join('')}</div></div>`;
+    nav.insertBefore(div, $('.hdr-cta', nav));
+    $('.nav-b', div).addEventListener('click', () => { if (innerWidth <= 1060) div.classList.toggle('open'); });
+  }
+}
+
+function discordHTML(dc) {
+  return `<iframe title="Discord de Lutèce Group" src="https://discord.com/widget?id=${encodeURIComponent(dc.id)}&theme=${dc.theme}" width="350" height="500" allowtransparency="true" frameborder="0" loading="lazy" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>`;
+}
+function mountDiscord(s) {
+  const dc = s && s.discord;
+  $$('[data-discord]').forEach(el => {
+    if (!dc) { el.hidden = true; return; }
+    const box = $('.dc-frame', el);
+    if (box) box.innerHTML = discordHTML(dc);
+    el.hidden = false;
+  });
+}
+
+function showPopup(s) {
+  const p = s && s.popup;
+  if (!p || $('#popup')) return;
+  const sig = p.id || (p.titre + '|' + p.texte).slice(0, 80);
+  try { if (localStorage.getItem('lg_popup') === sig) return; } catch (e) {}
+  const el = document.createElement('div');
+  el.className = 'popup'; el.id = 'popup'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'popup-t');
+  el.innerHTML = `<div class="popup-bg" data-close></div><div class="popup-box">
+    <button class="popup-x" type="button" data-close aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
+    ${p.image ? `<div class="popup-img" style="background-image:url('${esc(p.image)}')"></div>` : ''}
+    <div class="popup-body"><h2 id="popup-t">${esc(p.titre)}</h2>${p.texte ? `<p>${esc(p.texte).replace(/\n/g, '<br>')}</p>` : ''}
+    <div class="popup-act">${p.lien ? `<a class="btn btn-gold" href="${esc(p.lien)}" target="_blank" rel="noopener">${esc(p.bouton || 'En savoir plus')}</a>` : ''}<button class="btn btn-ghost" type="button" data-close>Fermer</button></div></div></div>`;
+  const close = () => {
+    el.classList.remove('on');
+    try { localStorage.setItem('lg_popup', sig); } catch (e) {}
+    setTimeout(() => el.remove(), 500);
+    document.removeEventListener('keydown', onKey);
+  };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  setTimeout(() => {
+    document.body.appendChild(el);
+    el.addEventListener('click', e => { if (e.target.closest('[data-close]')) close(); });
+    document.addEventListener('keydown', onKey);
+    requestAnimationFrame(() => { el.classList.add('on'); const b = $('.popup-x', el); if (b) b.focus(); });
+  }, 1200);
+}
+
+function artCard(a, i) {
+  return `<a class="acard rv" style="--d:${(i % 3) * 80}ms" href="${BASE}article.html?s=${encodeURIComponent(a.slug)}">
+    <div class="acard-img${a.image ? '' : ' noimg'}"${a.image ? ` style="background-image:url('${esc(a.image)}')"` : ''}></div>
+    <div class="acard-b"><span class="chip-k">${esc(a.categorie || 'Actualité')}</span><h3>${esc(a.titre)}</h3>
+      <p>${esc(a.resume)}</p><small>${esc(fmtDay(a.date))}${a.auteur ? ' · ' + esc(a.auteur) : ''}</small></div></a>`;
+}
+
+function pageHomeNews(s) {
+  const box = $('#home-news'); if (!box) return;
+  const list = (s && s.articles || []).slice(0, 3);
+  if (!list.length) { box.hidden = true; return; }
+  $('.news-grid', box).innerHTML = list.map(artCard).join('');
+  box.hidden = false;
+}
+
+function pageArticles(s) {
+  const g = $('#agrid'); if (!g) return;
+  const list = s && s.articles || [];
+  if (!list.length) { g.innerHTML = `<div class="empty"><b>Aucun article pour le moment</b>Les actualités de l’alliance apparaîtront ici.</div>`; return; }
+  g.innerHTML = list.map(artCard).join('');
+}
+
+function paragraphs(txt) {
+  return String(txt || '').split(/\n{2,}/).map(b => b.trim()).filter(Boolean).map(b => {
+    if (/^#{1,3}\s/.test(b)) return `<h3>${esc(b.replace(/^#{1,3}\s+/, ''))}</h3>`;
+    return `<p>${esc(b).replace(/\n/g, '<br>')}</p>`;
+  }).join('');
+}
+
+async function pageArticle() {
+  const t = $('#art-title'); if (!t) return;
+  const slug = (new URLSearchParams(location.search).get('s') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+  const s = slug ? await loadSite(slug) : null;
+  const a = s && s.article;
+  if (!a) {
+    t.textContent = 'Article introuvable';
+    $('#art-body').innerHTML = `<div class="empty"><b>Cet article n’existe pas ou n’est plus en ligne.</b><a class="link" href="${BASE}articles.html">Voir toutes les actualités <i class="fa-solid fa-arrow-right"></i></a></div>`;
+    return;
+  }
+  document.title = a.titre + ' — Lutèce Group';
+  t.textContent = a.titre;
+  $('#art-meta').textContent = fmtDay(a.date) + (a.auteur ? ' · ' + a.auteur : '');
+  if (a.image) { const im = $('#art-img'); im.style.backgroundImage = `url("${a.image}")`; im.hidden = false; }
+  $('#art-body').innerHTML = paragraphs(a.contenu);
 }
 
 /* ------------------------------------------------------------ animations */
@@ -404,6 +534,13 @@ function init() {
   mountChrome(); decorate(); splitStatement(); stagger(); observeReveal(); observeCounters(); tilt(); rails(); scrollspy();
   addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll); onScroll();
   requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('loaded')));
+  loadSite().then(st => {
+    applyLinks(st); mountDiscord(st); showPopup(st);
+    if (page === 'home') pageHomeNews(st);
+    if (page === 'articles') pageArticles(st);
+    observeReveal(); onScroll();
+  });
+  if (page === 'article') pageArticle().then(() => { observeReveal(); onScroll(); });
   loadData().then(d => {
     applyData(d);
     if (page === 'home') pageHome(d);
