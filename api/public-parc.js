@@ -61,10 +61,10 @@ const CATEGORIES = ['Minibus', 'Midibus', 'Standards', 'Articulés', 'BHNS', 'LE
 
 function categorize(...hints) {
   const t = norm(hints.join(' '));
-  if (/\bmini/.test(t)) return 'Minibus';
-  if (/\bmidi/.test(t)) return 'Midibus';
-  if (/articul|double|\bciti?aro\s*g\b|\bg\s*c2\b|\b(lion.?s city|urbino|solaris|sileo)\s*18\b|\b(eletta|e0[0-9]+)\s*g\b/.test(t)) return 'Articulés';
   if (/bhns|brt|\btram/.test(t)) return 'BHNS';
+  if (/\bmini|sprinter/.test(t)) return 'Minibus';
+  if (/\bmidi|\bcitaro k\b/.test(t)) return 'Midibus';
+  if (/articul|\bgu\s*c2\b|double|\bciti?aro\s*g\b|\bg\s*c2\b|\b(lion.?s city|urbino|solaris|sileo)\s*18\b|\b(eletta|e0[0-9]+)\s*g\b/.test(t)) return 'Articulés';
   if (/\bcar\b|autocar|\ble\b|low entry|intercit|tourisme/.test(t)) return 'LE & Cars';
   return 'Standards';
 }
@@ -106,14 +106,17 @@ function statusLabel(v) {
 }
 
 // ---------- normalisation des véhicules ----------
+const unent = x => String(x == null ? '' : x).replace(/&#0*39;|&apos;/g, "'").replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
 function fromTM(v) {
-  const marque = pick(v, ['marque', 'constructeur', 'brand', 'fabricant']);
-  const modele = pick(v, ['modele', 'model', 'nom_modele', 'designation', 'nom']);
+  const marqueRaw = pick(v, ['marque', 'constructeur', 'brand', 'fabricant']);
+  const modeleRaw = pick(v, ['modele', 'model', 'nom_modele', 'designation', 'nom']);
+  const marque = unent(marqueRaw), modele = unent(modeleRaw);
   const type = pick(v, ['categorie', 'category', 'type_vehicule', 'type', 'genre']);
   return {
     ref: pick(v, ['numero_parc', 'num_parc', 'n_parc', 'parc_numero', 'numero', 'immatriculation', 'id']),
-    marque, modele,
-    categorie: (Number(String(pick(v, ['places', 'nb_places', 'capacite', 'places_totales'])).replace(/\D/g, '')) >= 130 && categorize(type, modele) === 'Standards') ? 'Articulés' : categorize(type, modele),
+    marque, modele, cleRaw: cleOf(marqueRaw, modeleRaw),
+    categorie: (Number(String(pick(v, ['places', 'nb_places', 'capacite', 'places_totales'])).replace(/\D/g, '')) >= 140 && categorize(type, modele) === 'Standards') ? 'Articulés' : categorize(type, modele),
     moteur: motorLabel(pick(v, ['motorisation', 'moteur', 'energie', 'carburant', 'type_moteur'])),
     annee: yearOf(pick(v, ['mise_en_service', 'date_mise_en_service', 'mes', 'annee', 'year', 'date_achat'])),
     places: pick(v, ['places', 'nb_places', 'capacite', 'places_totales']),
@@ -121,7 +124,7 @@ function fromTM(v) {
     clim: pick(v, ['climatisation', 'clim', 'ventilation']),
     accessibilite: pick(v, ['accessibilite', 'pmr']),
     options: pick(v, ['options', 'options_usine']),
-    statut: '', retour: ''
+    statut: statusLabel(pick(v, ['statut', 'etat', 'status'])), retour: dateOf(pick(v, ['date_fin', 'fin', 'retour']))
   };
 }
 
@@ -192,7 +195,7 @@ export default async function handler(req, res) {
     const base = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/';
     dbBase = base; dbH = h;
     const [a, b, c] = await Promise.allSettled([
-      getJSON(base + 'app_config?select=key,value&key=in.(site_links,parc_sheet_urls,parc_cache)', h),
+      getJSON(base + 'app_config?select=key,value&key=in.(site_links,parc_sheet_urls,parc_cache,parc_categories)', h),
       getJSON(base + 'tarifs?select=key,value', h),
       getJSON(base + 'parc_photos?select=cle,storage_path,ordre&order=ordre.asc,created_at.asc', h)
     ]);
@@ -233,12 +236,12 @@ export default async function handler(req, res) {
     if (glob.status === 'fulfilled') {
       const items = asList(glob.value).map(fromTM).filter(v => v.ref || v.modele);
       items.forEach(v => byRefTM.set(v.ref || Symbol(), v));
-      diag.global = items.length; diag.global_meta = meta(glob.value);
+      diag.global = items.length; diag.global_keys = Object.keys(asList(glob.value)[0] || {}).slice(0, 40); diag.global_meta = meta(glob.value);
     } else warnings.push('tm[' + baseHost + ']: ' + String(glob.reason && glob.reason.message || glob.reason).slice(0, 80));
     locOk = loc.status === 'fulfilled';
     if (loc.status === 'fulfilled') {
       const items = asList(loc.value);
-      diag.location = items.length; diag.location_meta = meta(loc.value);
+      diag.location = items.length; diag.location_keys = Object.keys(items[0] || {}).slice(0, 40); diag.location_meta = meta(loc.value);
       for (const raw of items) {
         const ref = refOf(raw);
         const fin = dateOf(pick(raw, ['date_fin', 'fin', 'retour']));
@@ -297,9 +300,8 @@ export default async function handler(req, res) {
   }
   const vehicles = [...byRef.values(), ...noRef];
   for (const v of vehicles) {
-    if (!v.statut && v.ref && locOk && !enLocation.has(v.ref) && sources.tm) v.statut = 'Disponible';
-    if (!v.statut && v.ref && enLocation.has(v.ref)) { v.statut = 'En location'; v.retour = enLocation.get(v.ref) || ''; }
-    v.cle = cleOf(v.marque, v.modele);
+    v.cle = v.cleRaw || cleOf(v.marque, v.modele); delete v.cleRaw;
+    if (cfg.parc_categories && CATEGORIES.includes(cfg.parc_categories[v.cle])) v.categorie = cfg.parc_categories[v.cle];
     if (v.statut !== 'En location') v.retour = '';
   }
 
