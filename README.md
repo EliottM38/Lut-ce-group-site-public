@@ -16,4 +16,5 @@ Ces données sont gérées depuis l'Espace Staff (carte « Site public » de la 
 
 ## Fichiers
 - `*.html`, `css/site.css`, `js/site.js` : le site
-- `api/public-parc.js` : endpoint public en lecture seule (champs filtrés, cache 5 min)
+- `api/public-parc.js` : catalogue du parc (lecture seule, champs filtrés)
+- `api/public-site.js` : articles, pop-up, liens supplémentaires et widget Discord (lus en base, gérés depuis l'Espace Staff)
