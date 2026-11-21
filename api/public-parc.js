@@ -95,6 +95,20 @@ function dateOf(v) {
   return '';
 }
 
+// État (usure) : accepte « 87 », « 87 % », « 0,87 » ; renvoie un entier 0-100 ou null (texte non chiffré, vide).
+function pctOf(v) {
+  const m = String(v ?? '').replace(',', '.').match(/-?\d+(\.\d+)?/);
+  if (!m) return null;
+  let n = parseFloat(m[0]);
+  if (n > 0 && n <= 1 && !/%/.test(String(v))) n *= 100;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+// Kilométrage : « 123 456 », « 123456 km » → entier, ou null.
+function kmOf(v) {
+  const t = String(v ?? '').replace(/[\s\u00a0.]/g, '').replace(',', '.').match(/\d+(\.\d+)?/);
+  return t ? Math.round(parseFloat(t[0])) : null;
+}
+
 function statusLabel(v) {
   const t = norm(v);
   if (!t) return '';
@@ -124,6 +138,10 @@ function fromTM(v) {
     clim: pick(v, ['climatisation', 'clim', 'ventilation']),
     accessibilite: pick(v, ['accessibilite', 'pmr']),
     options: pick(v, ['options', 'options_usine']),
+    conso: pick(v, ['consommation', 'conso', 'consommation_100km']),
+    etat_tech: pctOf(pick(v, ['etat_technique', 'etat_moteur', 'etat_mecanique', 'usure_technique', 'etat_tech'])),
+    etat_int: pctOf(pick(v, ['etat_interieur', 'etat_int', 'usure_interieur', 'etat_habitacle'])),
+    km: kmOf(pick(v, ['kilometrage', 'kilometres', 'km', 'compteur', 'odometre'])),
     statut: statusLabel(pick(v, ['statut', 'etat', 'status'])), retour: dateOf(pick(v, ['date_fin', 'fin', 'retour']))
   };
 }
@@ -138,7 +156,11 @@ function fromSheet(rows, categorie) {
     moteur: col('Motorisation', 'Moteur'), annee: col('M.E.S', 'Mise en service', 'Année'),
     statut: col('Statut', 'Disponibilité'), retour: col('Date de retour', 'Date de retour DATE MAXIMUM ATTEINTE'),
     places: col('Places'), portes: col('Portes'), clim: col('Ventilation', 'Climatisation'),
-    options: col("OPTIONS D'USINE", 'Options')
+    options: col("OPTIONS D'USINE", 'Options'),
+    conso: col('Consommation', 'Conso'),
+    etat_tech: col('État Moteur', 'Etat Moteur', 'État technique', 'Etat technique'),
+    etat_int: col('État Intérieur', 'Etat Intérieur', 'Etat interieur'),
+    km: col('Kilométrage', 'Kilometrage', 'Km')
   };
   const g = (row, k) => (C[k] >= 0 ? String(row[C[k]] ?? '').trim() : '');
   return rows.slice(1).map(row => ({
@@ -146,6 +168,7 @@ function fromSheet(rows, categorie) {
     categorie: categorie || categorize(g(row, 'modele')),
     moteur: motorLabel(g(row, 'moteur')), annee: yearOf(g(row, 'annee')),
     places: g(row, 'places'), portes: g(row, 'portes'), clim: g(row, 'clim'), accessibilite: '', options: g(row, 'options'),
+    conso: g(row, 'conso'), etat_tech: pctOf(g(row, 'etat_tech')), etat_int: pctOf(g(row, 'etat_int')), km: kmOf(g(row, 'km')),
     statut: statusLabel(g(row, 'statut')), retour: dateOf(g(row, 'retour'))
   })).filter(v => v.ref || v.modele);
 }
@@ -295,7 +318,7 @@ export default async function handler(req, res) {
   for (const s of sheetRows) {
     const base = s.ref ? byRef.get(s.ref) : null;
     if (base) {
-      for (const [k, val] of Object.entries(s)) if (val) base[k] = val;
+      for (const [k, val] of Object.entries(s)) if (val || (typeof val === 'number' && val === 0)) base[k] = val;
     } else if (s.ref) byRef.set(s.ref, s); else noRef.push(s);
   }
   const vehicles = [...byRef.values(), ...noRef];
@@ -312,7 +335,7 @@ export default async function handler(req, res) {
     let m = models.get(v.cle);
     if (!m) {
       m = { cle: v.cle, categorie: v.categorie, marque: v.marque, modele: v.modele, moteurs: [], annees: {}, quantite: 0, disponibles: 0,
-        suivis: 0, places: '', portes: '', clim: '', accessibilite: '', options: '', photos: photos[v.cle] || [] };
+        suivis: 0, places: '', portes: '', clim: '', accessibilite: '', options: '', conso: '', photos: photos[v.cle] || [] };
       models.set(v.cle, m);
     }
     m.quantite++;
@@ -320,7 +343,7 @@ export default async function handler(req, res) {
     if (v.statut === 'Disponible') m.disponibles++;
     if (v.moteur && !m.moteurs.includes(v.moteur)) m.moteurs.push(v.moteur);
     if (v.annee) m.annees[v.annee] = (m.annees[v.annee] || 0) + 1;
-    for (const k of ['places', 'portes', 'clim', 'accessibilite', 'options']) if (!m[k] && v[k]) m[k] = v[k];
+    for (const k of ['places', 'portes', 'clim', 'accessibilite', 'options', 'conso']) if (!m[k] && v[k]) m[k] = v[k];
   }
   const modelList = [...models.values()].sort((a, b) =>
     CATEGORIES.indexOf(a.categorie) - CATEGORIES.indexOf(b.categorie) || (a.marque + a.modele).localeCompare(b.marque + b.modele, 'fr'));
@@ -353,7 +376,10 @@ export default async function handler(req, res) {
     // champs publics uniquement (liste blanche)
     vehicles: vehicles.map(v => ({
       ref: v.ref, cle: v.cle, categorie: v.categorie, marque: v.marque, modele: v.modele,
-      moteur: v.moteur, annee: v.annee, statut: v.statut, retour: v.retour
+      moteur: v.moteur, annee: v.annee, statut: v.statut, retour: v.retour,
+      etat_tech: Number.isFinite(v.etat_tech) ? v.etat_tech : null,
+      etat_int: Number.isFinite(v.etat_int) ? v.etat_int : null,
+      km: Number.isFinite(v.km) ? v.km : null
     })),
     tarifs: buildTarifs(tarifRows),
     site_images: siteImages,
