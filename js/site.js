@@ -13,6 +13,14 @@ const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const FINE = matchMedia('(hover:hover) and (pointer:fine)').matches;
 const root = document.documentElement;
 root.classList.add('js');
+const THEME_KEY = 'lg-theme';
+function storedTheme() { try { return localStorage.getItem(THEME_KEY); } catch (e) { return null; } }
+function setTheme(t, save) {
+  root.setAttribute('data-theme', t);
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = t === 'dark' ? '#050a1c' : '#080f28';
+  if (save) { try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+}
+setTheme(storedTheme() || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), false);
 const $ = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => Array.from(c.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -51,10 +59,9 @@ const MENU = [
   { t: 'Service Location', cols: [
     { h: 'Louer', l: [
       ['pole-location.html', 'Pôle Location', 'Tarifs, règles et Service Après Location'],
-      ['pole-location.html#tarifs', 'Tarifs de location', 'À la journée, à la semaine, au mois'],
+      ['pole-location.html#tarifs', 'Tarifs de location', 'À la semaine et au mois'],
       ['pole-location.html#sal', 'Service Après Location', 'Pannes, immobilisations, contrôles techniques']] },
-    { h: 'Notre parc', l: [['parc.html', 'Notre Parc', 'Le catalogue complet']]
-      .concat(CATS.map(c => ['parc.html?cat=' + encodeURIComponent(c), c, '', 1])) }] },
+    { h: 'Notre parc', l: [['parc.html', 'Notre Parc', 'Le catalogue complet, avec l’état de chaque véhicule']] }] },
   { t: 'Service Exploitation et Financement', cols: [
     { h: 'Exploitation', l: [
       ['pole-exploitation.html', 'Pôle Exploitation', 'Intérimaires et ateliers de l’Alliance'],
@@ -67,6 +74,15 @@ const MENU = [
 ];
 const here = location.pathname.split('/').pop() || 'index.html';
 
+// Logo : images/logo.png (ou l'image « logo » configurée dans l'espace staff). Repli : monogramme LG.
+function logoHTML() { return `<img class="brand-logo" data-logo src="${BASE}images/logo.png" alt="" width="40" height="40"><span class="brand-mark" hidden>LG</span>`; }
+function fixLogos() {
+  $$('img[data-logo]').forEach(img => {
+    const fail = () => { img.hidden = true; const m = img.nextElementSibling; if (m && m.classList.contains('brand-mark')) m.hidden = false; };
+    img.addEventListener('error', fail, { once: true });
+    if (img.complete && img.naturalWidth === 0) fail();
+  });
+}
 function headerHTML() {
   const items = MENU.map(g => {
     const cur = g.cols.some(c => c.l.some(l => l[0].split(/[#?]/)[0] === here));
@@ -74,10 +90,14 @@ function headerHTML() {
       <div class="mega">${g.cols.map(c => `<div class="mega-col"><h4>${esc(c.h)}</h4>${c.l.map(l =>
         `<a href="${BASE}${l[0]}"${l[3] ? ' class="sub"' : ''}><b>${esc(l[1])}</b>${l[2] ? `<span>${esc(l[2])}</span>` : ''}</a>`).join('')}</div>`).join('')}</div></div>`;
   }).join('');
-  return `<header class="hdr" id="hdr"><div class="wrap hdr-in">
-    <a class="brand" href="${BASE}index.html" aria-label="Lutèce Group — accueil"><span class="brand-mark">LG</span><span>Lutèce Group<small>Opérateur de transport</small></span></a>
-    <nav class="nav" aria-label="Navigation principale">${items}<a class="btn btn-gold btn-sm hdr-cta" href="${BASE}rejoindre.html">Nous rejoindre</a></nav>
-    <button class="burger" id="burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false"><i></i><i></i></button>
+  return `<a class="skip" href="#main">Aller au contenu</a><header class="hdr" id="hdr"><div class="wrap hdr-in">
+    <a class="brand" href="${BASE}index.html" aria-label="Lutèce Group — accueil">${logoHTML()}<span>Lutèce Group<small>Opérateur de transport</small></span></a>
+    <nav class="nav" id="nav" aria-label="Navigation principale">${items}<a class="btn btn-gold btn-sm hdr-cta" href="${BASE}rejoindre.html">Nous rejoindre</a></nav>
+    <div class="hdr-tools">
+      <button class="hdr-btn" id="btn-search" type="button" aria-label="Rechercher sur le site" aria-haspopup="dialog"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
+      <button class="hdr-btn" id="btn-theme" type="button" aria-label="Changer de thème (clair / sombre)"><i class="fa-solid fa-moon t-moon" aria-hidden="true"></i><i class="fa-solid fa-sun t-sun" aria-hidden="true"></i></button>
+    </div>
+    <button class="burger" id="burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav"><i></i><i></i></button>
   </div></header><div class="progress" id="progress"></div>`;
 }
 
@@ -86,15 +106,18 @@ function footerHTML() {
   const K = (k, t) => `<li data-link="${k}"><a rel="noopener" target="_blank">${t}</a></li>`;
   return `<footer class="ftr"><div class="wrap">
     <div class="ftr-top">
-      <div><a class="brand" href="${BASE}index.html"><span class="brand-mark">LG</span><span>Lutèce Group</span></a>
+      <div><a class="brand" href="${BASE}index.html" aria-label="Lutèce Group — accueil">${logoHTML()}<span>Lutèce Group</span></a>
         <p>Opérateur de transport et prestataire de service privé, spécialisé dans les services auxiliaires des transports terrestres.</p></div>
       <div><h4>Qui sommes-nous ?</h4><ul>${L('articles.html', 'Actualités')}${L('presentation.html', 'Présentation')}${L('reglement.html', 'Règlement de l’Alliance')}${L('forfaits.html', 'Nos forfaits')}${L('rejoindre.html', 'Nous rejoindre')}</ul></div>
       <div><h4>Service Location</h4><ul>${L('pole-location.html', 'Pôle Location')}${L('parc.html', 'Notre Parc')}${L('pole-location.html#tarifs', 'Tarifs de location')}${L('pole-location.html#sal', 'Service Après Location')}</ul></div>
       <div><h4>Exploitation &amp; Financement</h4><ul>${L('pole-exploitation.html', 'Pôle Exploitation')}${L('pole-exploitation.html#ateliers', 'Ateliers de l’Alliance')}${L('pole-financement.html', 'Pôle Financement')}${L('pole-financement.html#gold', 'Programme GOLD')}</ul></div>
       <div><h4>Liens utiles</h4><ul>${K('forum', 'Forum Transport Manager')}${K('tm', 'Transport Manager')}${K('demande_location', 'Demande de location')}${K('sal', 'Formulaire S.A.L')}${K('intervention', 'Intervention atelier')}${K('remboursement', 'Demande de remboursement')}${K('disponibilites', 'Disponibilités du parc')}<span id="ftr-extra" style="display:contents"></span></ul></div>
     </div>
-    <div class="ftr-bot"><span>© 2026 Lutèce Group</span><span>Site conçu dans le cadre du jeu Transport Manager</span></div>
-  </div></footer>`;
+    <div class="ftr-bot"><span>© 2026 Lutèce Group · Alliance du jeu Transport Manager</span>
+      <span class="lg"><a href="${BASE}mentions-legales.html">Mentions légales</a><a href="${BASE}confidentialite.html">Confidentialité</a><a href="${BASE}cgv-cgu.html">CGV / CGU</a></span></div>
+  </div></footer>
+  <button class="to-top" id="to-top" type="button" aria-label="Retour en haut de la page"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+  <dialog class="sdlg" id="sdlg" aria-label="Recherche sur le site"><form method="dialog" id="sform" role="search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="sq" type="search" placeholder="Rechercher une page ou un modèle de bus…" aria-label="Rechercher" autocomplete="off"><button class="sx" value="close" aria-label="Fermer la recherche">Échap</button></form><div class="sres" id="sres" aria-live="polite"></div></dialog>`;
 }
 
 function mountChrome() {
@@ -109,7 +132,85 @@ function mountChrome() {
   });
   $$('.nav-b').forEach(b => b.addEventListener('click', () => { if (innerWidth <= 1060) b.parentElement.classList.toggle('open'); }));
   $$('.nav a').forEach(a => a.addEventListener('click', () => { hdr.classList.remove('open'); document.body.style.overflow = ''; }));
-  addEventListener('keydown', e => { if (e.key === 'Escape') { hdr.classList.remove('open'); document.body.style.overflow = ''; } });
+  addEventListener('keydown', e => { if (e.key === 'Escape') { hdr.classList.remove('open'); document.body.style.overflow = ''; burger && burger.setAttribute('aria-expanded', 'false'); } });
+  const mainEl = $('main'); if (mainEl) { mainEl.id = 'main'; mainEl.tabIndex = -1; }
+  fixLogos();
+  const tb = $('#btn-theme');
+  if (tb) tb.addEventListener('click', () => setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true));
+  const tt = $('#to-top');
+  if (tt) { tt.addEventListener('click', () => scrollTo({ top: 0, behavior: REDUCE ? 'auto' : 'smooth' }));
+    const upd = () => tt.classList.toggle('on', scrollY > 700); addEventListener('scroll', upd, { passive: true }); upd(); }
+  mountSearch();
+}
+
+/* ------------------------------------------------------------ recherche */
+const PAGES = [
+  ['index.html', 'Accueil', 'lutèce group alliance transport'],
+  ['presentation.html', 'Présentation de Lutèce Group', 'alliance qui sommes-nous services conditions'],
+  ['reglement.html', 'Règlement de l’Alliance', 'règles articles amende forfait location recrutement départ confidentialité'],
+  ['forfaits.html', 'Nos forfaits : Standard et Ultimate', 'standard ultimate basique tarif facture intérimaires gold'],
+  ['rejoindre.html', 'Nous rejoindre', 'candidature adhésion conditions ancienneté solde raz forum'],
+  ['pole-location.html', 'Pôle Location', 'location bus tarifs semaine mois contrat durée'],
+  ['pole-location.html#tarifs', 'Tarifs de location', 'prix minibus midibus standard articulé car semaine mois'],
+  ['pole-location.html#sal', 'Service Après Location (S.A.L)', 'panne immobilisation contrôle technique ct remplacement'],
+  ['parc.html', 'Notre parc', 'catalogue véhicules bus modèles disponibilité état kilométrage'],
+  ['pole-exploitation.html', 'Pôle Exploitation', 'intérimaires mécaniciens conducteurs ateliers'],
+  ['pole-exploitation.html#ateliers', 'Ateliers de l’Alliance', 'panne options véhicule de remplacement révision'],
+  ['pole-financement.html', 'Pôle Financement', 'contrôle technique révision fco rénovation crédit banque'],
+  ['pole-financement.html#gold', 'Programme GOLD', 'daimler buses evobus vdi star'],
+  ['articles.html', 'Actualités', 'articles annonces nouvelles'],
+  ['mentions-legales.html', 'Mentions légales', 'éditeur hébergeur contact'],
+  ['confidentialite.html', 'Confidentialité', 'données cookies rgpd vie privée'],
+  ['cgv-cgu.html', 'CGV / CGU', 'conditions générales utilisation vente']
+];
+const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function mountSearch() {
+  const dlg = $('#sdlg'), inp = $('#sq'), out = $('#sres'), btn = $('#btn-search');
+  if (!dlg || typeof dlg.showModal !== 'function') { if (btn) btn.hidden = true; return; }
+  let models = [], sel = -1;
+  const open = () => { if (!dlg.open) dlg.showModal(); inp.focus(); inp.select(); render(); loadData().then(d => { models = (d && d.models) || []; render(); }); };
+  function render() {
+    const q = fold(inp.value).trim(), terms = q.split(/\s+/).filter(Boolean);
+    const hit = (t, k) => terms.every(w => fold(t + ' ' + k).includes(w));
+    const pages = (terms.length ? PAGES.filter(p => hit(p[1], p[2])) : PAGES.slice(0, 6));
+    const vs = terms.length ? models.filter(m => hit(m.marque + ' ' + m.modele, m.categorie + ' ' + (m.moteurs || []).join(' '))).slice(0, 8) : [];
+    let h = '';
+    if (pages.length) h += '<h4>Pages</h4>' + pages.map(p => `<a href="${BASE}${p[0]}"><b>${esc(p[1])}</b></a>`).join('');
+    if (vs.length) h += '<h4>Modèles du parc</h4>' + vs.map(m => `<a href="${modelHref(m)}"><b>${esc((m.marque + ' ' + m.modele).trim())}</b><span>${esc(m.categorie)} · ${m.quantite} véhicule${m.quantite > 1 ? 's' : ''}</span></a>`).join('');
+    out.innerHTML = h || '<p class="none">Aucun résultat. Essayez un autre mot, par exemple « tarifs » ou « Citaro ».</p>';
+    sel = -1;
+  }
+  const links = () => $$('a', out);
+  const mark = () => links().forEach((a, i) => { a.classList.toggle('sel', i === sel); if (i === sel) a.scrollIntoView({ block: 'nearest' }); });
+  inp.addEventListener('input', render);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); dlg.close(); return; }
+    const n = links().length; if (!n) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); sel = (sel + 1) % n; mark(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); sel = (sel - 1 + n) % n; mark(); }
+    else if (e.key === 'Enter') { e.preventDefault(); const a = links()[sel < 0 ? 0 : sel]; if (a) location.href = a.href; }
+  });
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  if (btn) btn.addEventListener('click', open);
+  addEventListener('keydown', e => {
+    const tag = (document.activeElement && document.activeElement.tagName) || '';
+    if ((e.key === 'k' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !/INPUT|SELECT|TEXTAREA/.test(tag))) { e.preventDefault(); open(); }
+  });
+}
+
+/* ------------------------------------------------------------ écran de chargement (une fois par visite) */
+function preloader() {
+  if (REDUCE) return;
+  let seen = false; try { seen = sessionStorage.getItem('lg_seen') === '1'; sessionStorage.setItem('lg_seen', '1'); } catch (e) {}
+  if (seen) return;
+  const el = document.createElement('div'); el.className = 'pl'; el.setAttribute('aria-hidden', 'true');
+  el.innerHTML = `<img src="${BASE}images/logo.png" alt="" width="64" height="64"><b hidden>LG</b>`;
+  const im = el.firstChild;
+  const fail = () => { im.hidden = true; el.lastChild.hidden = false; };
+  im.addEventListener('error', fail, { once: true });
+  document.body.appendChild(el);
+  const done = () => { el.classList.add('go'); setTimeout(() => el.remove(), 1300); };
+  setTimeout(done, 650);
 }
 
 /* ------------------------------------------------------------ routes (décor des hero sans photo) */
@@ -154,8 +255,9 @@ function applyData(d) {
     const u = d.site_images && d.site_images[el.dataset.img];
     if (u) { el.style.backgroundImage = `url("${u}")`; el.classList.remove('noimg'); el.classList.add('has'); }
   });
+  if (d.site_images && d.site_images.logo) $$('img[data-logo]').forEach(img => { img.src = d.site_images.logo; img.hidden = false; const m = img.nextElementSibling; if (m && m.classList.contains('brand-mark')) m.hidden = true; });
   $$('[data-link]').forEach(el => {
-    const u = d.links && d.links[el.dataset.link];
+    const u = d.links && (d.links[el.dataset.link] || (el.dataset.linkAlt && d.links[el.dataset.linkAlt]));
     if (!u) return;
     const a = el.matches('a') ? el : $('a', el);
     if (a) { a.href = u; a.target = '_blank'; a.rel = 'noopener'; }
@@ -219,7 +321,11 @@ function mountDiscord(s) {
   $$('[data-discord]').forEach(el => {
     if (!dc) { el.hidden = true; return; }
     const box = $('.dc-frame', el);
-    if (box) box.innerHTML = discordHTML(dc);
+    // Rien n'est demandé à Discord tant que le visiteur ne clique pas (vie privée).
+    if (box) {
+      box.innerHTML = '<div class="dc-ask"><p>Le widget est fourni par Discord. En l’affichant, votre navigateur se connecte aux serveurs de Discord.</p><button class="btn btn-gold" type="button">Afficher le widget Discord</button></div>';
+      $('button', box).addEventListener('click', () => { box.innerHTML = discordHTML(dc); });
+    }
     el.hidden = false;
   });
 }
@@ -471,6 +577,14 @@ function pageParc(d) {
   render();
 }
 
+// Jauge d'état : vert ≥ 70 %, orange ≥ 40 %, rouge en dessous. Valeur absente → tiret.
+function meterHTML(v, label) {
+  if (v == null) return '<span style="color:var(--muted)">—</span>';
+  const c = v >= 70 ? '' : v >= 40 ? ' mid' : ' low';
+  return `<div class="meter${c}" role="img" aria-label="${esc(label)} : ${v} %"><i style="--v:${v}%"></i><b>${v} %</b></div>`;
+}
+const fmtKm = n => n == null ? '—' : fmt(n) + ' km';
+
 function pageModele(d) {
   const out = $('#fiche'); if (!out) return;
   const key = new URLSearchParams(location.search).get('m') || '';
@@ -491,13 +605,14 @@ function pageModele(d) {
     : `<div class="ph show">${busSVG(m.categorie)}</div>`;
   const thumbs = photos.length > 1 ? `<div class="gal-thumbs">${photos.map((p, i) => `<button type="button" class="${i ? '' : 'on'}" data-i="${i}" aria-label="Photo ${i + 1}"><img src="${esc(p)}" alt="" loading="lazy"></button>`).join('')}</div>` : '';
   const kv = [['Catégorie', m.categorie], ['Constructeur', m.marque], ['Motorisation', (m.moteurs || []).join(' · ')], ['Mise en service', yearsOf(m)],
-    ['Places', m.places], ['Portes', m.portes], ['Climatisation / ventilation', m.clim], ['Accessibilité', m.accessibilite], ['Options', m.options], ['Au parc', m.quantite + ' véhicule' + (m.quantite > 1 ? 's' : '')]]
+    ['Places', m.places], ['Portes', m.portes], ['Consommation', m.conso], ['Climatisation / ventilation', m.clim], ['Accessibilité', m.accessibilite], ['Options', m.options], ['Au parc', m.quantite + ' véhicule' + (m.quantite > 1 ? 's' : '')]]
     .filter(x => x[1]).map(x => `<div><span>${esc(x[0])}</span><b>${esc(x[1])}</b></div>`).join('');
   const sCls = { 'Disponible': 's-disp', 'En préparation': 's-prep', 'Aux ateliers': 's-atel', 'En location': 's-loc' };
+  const hasEtat = vs.some(v => v.etat_tech != null || v.etat_int != null || v.km != null);
   const rows = vs.sort((a, b) => String(a.ref).localeCompare(String(b.ref), 'fr', { numeric: true })).map(v => `<tr><td><b>${esc(v.ref || '—')}</b></td><td>${esc(v.annee || '—')}</td><td>${esc(v.moteur || '—')}</td>
+    ${hasEtat ? `<td>${meterHTML(v.etat_tech, 'État technique')}</td><td>${meterHTML(v.etat_int, 'État intérieur')}</td><td class="km">${fmtKm(v.km)}</td>` : ''}
     <td>${v.statut ? `<span class="badge ${sCls[v.statut] || ''}">${esc(v.statut)}</span>${v.retour ? ` <small style="color:var(--muted)">retour le ${fmtDate(v.retour)}</small>` : ''}` : '<span style="color:var(--muted)">—</span>'}</td></tr>`).join('');
   const tar = t ? `<div class="tbl-w"><table class="tbl"><thead><tr><th>Durée</th><th>Standard</th><th class="col-u">Ultimate</th></tr></thead><tbody>
-      <tr><td>À la journée</td><td><b>${fmt(t.j)} €</b></td><td class="col-u">Gratuit*</td></tr>
       <tr><td>À la semaine</td><td><b>${fmt(t.s)} €</b></td><td class="col-u">Gratuit*</td></tr>
       <tr><td>Au mois</td><td><b>${fmt(t.m)} €</b></td><td class="col-u">Gratuit*</td></tr></tbody></table></div>
       <p class="note">*Forfait Ultimate : gratuité totale dans la limite de 25 véhicules par type.${t.note ? ' ' + esc(t.note) + '.' : ''}</p>`
@@ -511,7 +626,8 @@ function pageModele(d) {
     </aside></div></div>
     <section class="sec sec--soft" style="margin-top:clamp(64px,9vw,120px)"><div class="wrap"><div class="head rv"><span class="eyebrow">Tarifs</span><h2 class="h-md">Louer ce modèle</h2></div><div class="rv">${tar}</div></div></section>
     ${rows ? `<section class="sec"><div class="wrap"><div class="head rv"><span class="eyebrow">Au parc</span><h2 class="h-md">Les ${vs.length} véhicule${vs.length > 1 ? 's' : ''} de ce modèle</h2></div>
-      <div class="tbl-w rv"><table class="tbl"><thead><tr><th>N° de parc</th><th>Mise en service</th><th>Motorisation</th><th>Disponibilité</th></tr></thead><tbody>${rows}</tbody></table></div></div></section>` : ''}
+      <div class="tbl-w rv"><table class="tbl"><thead><tr><th>N° de parc</th><th>Mise en service</th><th>Motorisation</th>${hasEtat ? '<th>État technique</th><th>État intérieur</th><th>Kilométrage</th>' : ''}<th>Disponibilité</th></tr></thead><tbody>${rows}</tbody></table></div>
+      ${hasEtat ? '<p class="vh-note">États exprimés en pourcentage : plus la barre est pleine, meilleur est l’état. Données issues de Transport Manager, mises à jour régulièrement.</p>' : ''}</div></section>` : ''}
     ${similar.length ? `<section class="sec sec--dark"><div class="wrap" data-rail><div class="rail-top"><div><span class="eyebrow">Dans la même catégorie</span><h2 class="h-md" style="margin-top:14px">D’autres ${esc(m.categorie)}</h2></div>
       <div class="rail-ctl"><button data-prev aria-label="Précédent"><i class="fa-solid fa-arrow-left"></i></button><button data-next aria-label="Suivant"><i class="fa-solid fa-arrow-right"></i></button></div></div>
       <div class="rail">${similar.map((x, i) => cardHTML(x, d, i)).join('')}</div></div></section>` : ''}`;
@@ -526,11 +642,12 @@ function pageModele(d) {
 
 function pageTarifs(d) {
   const body = $('#tarifs-body'); if (!body || !d || !d.tarifs) return;
-  body.innerHTML = d.tarifs.map(t => `<tr><td><b>${esc(t.label)}</b>${t.note ? `<br><small style="color:var(--muted)">${esc(t.note)}</small>` : ''}</td><td>${fmt(t.j)} €</td><td>${fmt(t.s)} €</td><td>${fmt(t.m)} €</td></tr>`).join('');
+  body.innerHTML = d.tarifs.map(t => `<tr><td><b>${esc(t.label)}</b>${t.note ? `<br><small style="color:var(--muted)">${esc(t.note)}</small>` : ''}</td><td>${fmt(t.s)} €</td><td>${fmt(t.m)} €</td></tr>`).join('');
 }
 
 /* ------------------------------------------------------------ démarrage */
 function init() {
+  preloader();
   mountChrome(); decorate(); splitStatement(); stagger(); observeReveal(); observeCounters(); tilt(); rails(); scrollspy();
   addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll); onScroll();
   requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('loaded')));
@@ -547,6 +664,8 @@ function init() {
     if (page === 'parc') pageParc(d);
     if (page === 'modele') pageModele(d);
     if (page === 'location') pageTarifs(d);
+    const jn = $('.join [data-link]');
+    if (jn && !jn.classList.contains('ok')) { const n = $('.join .note'); if (n) n.textContent = 'Le lien de demande n’est pas encore disponible. Rendez-vous sur Transport Manager pour faire votre demande d’adhésion.'; }
     observeReveal(); observeCounters(); onScroll();
   });
 }

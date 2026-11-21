@@ -1,0 +1,38 @@
+/* Polices et icônes hébergées avec le site : aucune requête vers un serveur tiers. */
+@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(../fonts/inter-latin-ext-wght-normal.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(../fonts/inter-latin-wght-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Font Awesome 6 Free';font-style:normal;font-weight:900;font-display:block;src:url(../fonts/fa-solid-900.woff2) format('woff2')}
+@font-face{font-family:'Font Awesome 6 Free';font-style:normal;font-weight:400;font-display:block;src:url(../fonts/fa-regular-400.woff2) format('woff2')}
+.fa-solid,.fa-regular{font-family:'Font Awesome 6 Free';font-style:normal;font-variant:normal;font-weight:900;line-height:1;display:inline-block;text-rendering:auto;-webkit-font-smoothing:antialiased}
+.fa-regular{font-weight:400}
+.fa-arrow-left::before{content:"\f060"}
+.fa-arrow-right::before{content:"\f061"}
+.fa-arrow-up::before{content:"\f062"}
+.fa-arrow-up-right-from-square::before{content:"\f08e"}
+.fa-award::before{content:"\f559"}
+.fa-bolt::before{content:"\f0e7"}
+.fa-bus::before{content:"\f207"}
+.fa-calendar::before{content:"\f133"}
+.fa-chart-line::before{content:"\f201"}
+.fa-check::before{content:"\f00c"}
+.fa-chevron-down::before{content:"\f078"}
+.fa-circle-check::before{content:"\f058"}
+.fa-circle-info::before{content:"\f05a"}
+.fa-clipboard-check::before{content:"\f46c"}
+.fa-couch::before{content:"\f4b8"}
+.fa-droplet::before{content:"\f043"}
+.fa-file-signature::before{content:"\f573"}
+.fa-fire-flame-simple::before{content:"\f46a"}
+.fa-gas-pump::before{content:"\f52f"}
+.fa-gears::before{content:"\f085"}
+.fa-hand-holding-dollar::before{content:"\f4c0"}
+.fa-handshake::before{content:"\f2b5"}
+.fa-id-card::before{content:"\f2c2"}
+.fa-layer-group::before{content:"\f5fd"}
+.fa-leaf::before{content:"\f06c"}
+.fa-magnifying-glass::before{content:"\f002"}
+.fa-moon::before{content:"\f186"}
+.fa-oil-can::before{content:"\f613"}
+.fa-screwdriver-wrench::before{content:"\f7d9"}
+.fa-sun::before{content:"\f185"}
+.fa-xmark::before{content:"\f00d"}
