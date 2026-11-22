@@ -21,6 +21,11 @@ function setTheme(t, save) {
   if (save) { try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
 }
 setTheme(storedTheme() || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), false);
+function ensureFavicon() {
+  let icon = document.querySelector('link[rel="icon"]');
+  if (!icon) { icon = document.createElement('link'); icon.rel = 'icon'; document.head.appendChild(icon); }
+  icon.type = 'image/png'; icon.href = BASE + 'images/logo.png';
+}
 const $ = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => Array.from(c.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -55,25 +60,25 @@ function loadData() {
 /* ------------------------------------------------------------ menu */
 const MENU = [
   { t: 'Qui sommes-nous ?', cols: [{ h: 'L’alliance', l: [
-    ['presentation.html', 'Présentation de Lutèce Group', 'Nos services, nos forfaits, nos conditions d’entrée'],
-    ['reglement.html', 'Le règlement de l’Alliance', 'Les règles communes, de A à J'],
-    ['forfaits.html', 'Nos forfaits', 'Standard et Ultimate, côte à côte'],
-    ['articles.html', 'Actualités', 'Les articles et annonces de l’alliance']] }] },
+    ['presentation.html', 'Présentation de Lutèce Group', 'Notre alliance, notre accompagnement'],
+    ['reglement.html', 'Le règlement de l’Alliance', 'Le cadre commun de nos membres'],
+    ['forfaits.html', 'Nos forfaits', 'Choisir la formule adaptée à votre activité'],
+    ['articles.html', 'Actualités', 'Les nouvelles de l’alliance']] }] },
   { t: 'Service Location', cols: [
     { h: 'Louer', l: [
-      ['pole-location.html', 'Pôle Location', 'Tarifs, règles et Service Après Location'],
-      ['pole-location.html#tarifs', 'Tarifs de location', 'À la semaine et au mois'],
-      ['pole-location.html#sal', 'Service Après Location', 'Pannes, immobilisations, contrôles techniques']] },
-    { h: 'Notre parc', l: [['parc.html', 'Notre Parc', 'Le catalogue complet, avec l’état de chaque véhicule']] }] },
+      ['pole-location.html', 'Pôle Location', 'Une flotte à votre disposition'],
+      ['pole-location.html#tarifs', 'Tarifs de location', 'Une tarification claire et flexible'],
+      ['pole-location.html#sal', 'Service Après Location', 'Un accompagnement pendant toute la location']] },
+    { h: 'Notre parc', l: [['parc.html', 'Notre Parc', 'Explorer les véhicules disponibles']] }] },
   { t: 'Service Exploitation et Financement', cols: [
     { h: 'Exploitation', l: [
-      ['pole-exploitation.html', 'Pôle Exploitation', 'Intérimaires et ateliers de l’Alliance'],
-      ['pole-exploitation.html#interimaires', 'Demande d’intérimaires', 'Mécaniciens et conducteurs'],
-      ['pole-exploitation.html#ateliers', 'Ateliers de l’Alliance', 'Pannes, options, véhicule de remplacement']] },
+      ['pole-exploitation.html', 'Pôle Exploitation', 'Les ressources pour faire avancer votre réseau'],
+      ['pole-exploitation.html#interimaires', 'Demande d’intérimaires', 'Conducteurs et mécaniciens selon vos besoins'],
+      ['pole-exploitation.html#ateliers', 'Ateliers de l’Alliance', 'Réparer, entretenir et repartir sereinement']] },
     { h: 'Financement', l: [
-      ['pole-financement.html', 'Pôle Financement', 'CT, révisions, FCO, rénovations'],
-      ['pole-financement.html#gold', 'Programme GOLD', 'Daimler Buses et VDI Star'],
-      ['pole-financement.html#renovations', 'Rénovations', 'Intérieures et techniques']] }] }
+      ['pole-financement.html', 'Pôle Financement', 'Soutenir vos investissements et votre développement'],
+      ['pole-financement.html#gold', 'Programme GOLD', 'Des avantages négociés pour les membres'],
+      ['pole-financement.html#renovations', 'Rénovations', 'Valoriser durablement votre flotte']] }] }
 ];
 const here = location.pathname.split('/').pop() || 'index.html';
 
@@ -139,7 +144,9 @@ function mountChrome() {
   const mainEl = $('main'); if (mainEl) { mainEl.id = 'main'; mainEl.tabIndex = -1; }
   fixLogos();
   const tb = $('#btn-theme');
-  if (tb) tb.addEventListener('click', () => setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true));
+  const syncThemeButton = () => { if (tb) { const dark = root.getAttribute('data-theme') === 'dark'; tb.setAttribute('aria-pressed', String(dark)); tb.setAttribute('aria-label', dark ? 'Activer le thème clair' : 'Activer le thème sombre'); } };
+  syncThemeButton();
+  if (tb) tb.addEventListener('click', () => { setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true); syncThemeButton(); });
   const tt = $('#to-top');
   if (tt) { tt.addEventListener('click', () => scrollTo({ top: 0, behavior: REDUCE ? 'auto' : 'smooth' }));
     const upd = () => tt.classList.toggle('on', scrollY > 700); addEventListener('scroll', upd, { passive: true }); upd(); }
@@ -319,6 +326,14 @@ function applyLinks(s) {
     nav.insertBefore(div, $('.hdr-cta', nav));
     $('.nav-b', div).addEventListener('click', () => { if (innerWidth <= 1060) div.classList.toggle('open'); });
   }
+}
+
+function applyReglement(s) {
+  if (!s || !s.reglement) return;
+  const rg = s.reglement;
+  const intro = $('[data-reglement-intro]');
+  if (intro && rg.introduction) intro.textContent = rg.introduction;
+  if (rg.version) $$('[data-reglement-version]').forEach(el => { el.textContent = rg.version; });
 }
 
 function discordHTML(dc) {
@@ -658,12 +673,13 @@ function pageTarifs(d) {
 
 /* ------------------------------------------------------------ démarrage */
 function init() {
+  ensureFavicon();
   preloader();
   mountChrome(); decorate(); splitStatement(); stagger(); observeReveal(); observeCounters(); tilt(); rails(); scrollspy();
   addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll); onScroll();
   requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('loaded')));
   loadSite().then(st => {
-    applyLinks(st); mountDiscord(st); showPopup(st);
+    applyLinks(st); applyReglement(st); mountDiscord(st); showPopup(st);
     if (page === 'home') pageHomeNews(st);
     if (page === 'articles') pageArticles(st);
     observeReveal(); onScroll();
