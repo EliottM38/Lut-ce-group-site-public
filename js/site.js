@@ -24,7 +24,7 @@ setTheme(storedTheme() || (matchMedia('(prefers-color-scheme: dark)').matches ? 
 function ensureFavicon() {
   let icon = document.querySelector('link[rel="icon"]');
   if (!icon) { icon = document.createElement('link'); icon.rel = 'icon'; document.head.appendChild(icon); }
-  icon.type = 'image/png'; icon.href = BASE + 'images/logo.png';
+  icon.type = 'image/png'; icon.href = BASE + 'images/logo.png?v=202701';
 }
 const $ = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => Array.from(c.querySelectorAll(s));
@@ -59,18 +59,18 @@ function loadData() {
 
 /* ------------------------------------------------------------ menu */
 const MENU = [
-  { t: 'Qui sommes-nous ?', cols: [{ h: 'L’alliance', l: [
+  { t: 'L’Alliance', cols: [{ h: 'L’alliance', l: [
     ['presentation.html', 'Présentation de Lutèce Group', 'Notre alliance, notre accompagnement'],
     ['reglement.html', 'Le règlement de l’Alliance', 'Le cadre commun de nos membres'],
     ['forfaits.html', 'Nos forfaits', 'Choisir la formule adaptée à votre activité'],
     ['articles.html', 'Actualités', 'Les nouvelles de l’alliance']] }] },
-  { t: 'Service Location', cols: [
+  { t: 'Location', cols: [
     { h: 'Louer', l: [
       ['pole-location.html', 'Pôle Location', 'Une flotte à votre disposition'],
       ['pole-location.html#tarifs', 'Tarifs de location', 'Une tarification claire et flexible'],
       ['pole-location.html#sal', 'Service Après Location', 'Un accompagnement pendant toute la location']] },
     { h: 'Notre parc', l: [['parc.html', 'Notre Parc', 'Explorer les véhicules disponibles']] }] },
-  { t: 'Service Exploitation et Financement', cols: [
+  { t: 'Exploitation & finance', cols: [
     { h: 'Exploitation', l: [
       ['pole-exploitation.html', 'Pôle Exploitation', 'Les ressources pour faire avancer votre réseau'],
       ['pole-exploitation.html#interimaires', 'Demande d’intérimaires', 'Conducteurs et mécaniciens selon vos besoins'],
