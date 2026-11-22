@@ -214,8 +214,8 @@ export default async function handler(req, res) {
 
   // 1) Base de données : app_config, tarifs, photos
   let cfg = {}, tarifRows = [], photoRows = [], dbBase = '', dbH = null;
-  if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
-    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + SUPABASE_SERVICE_KEY, Accept: 'application/json' };
+  if (SUPABASE_URL && SUPABASE_SECRET_KEY) {
+    const h = { apikey: SUPABASE_SECRET_KEY, Authorization: 'Bearer ' + SUPABASE_SECRET_KEY, Accept: 'application/json' };
     const base = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/';
     dbBase = base; dbH = h;
     const [a, b, c] = await Promise.allSettled([
