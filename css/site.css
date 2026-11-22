@@ -554,11 +554,11 @@ html[data-theme=dark] .popup-act .btn-ghost{background:#16225a;color:#fff}
 html[data-theme=dark] .sres a:hover,html[data-theme=dark] .sres a.sel{background:#16225a}
 
 /* En-tête : le symbole de l'alliance est le point d'ancrage de la navigation. */
-.hdr{height:82px;background:rgba(8,15,40,.97);border-bottom:1px solid rgba(201,168,76,.16)}
+.hdr{height:90px;background:rgba(8,15,40,.97);border-bottom:1px solid rgba(201,168,76,.16)}
 .hdr::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(201,168,76,.18),transparent 22%);opacity:.42}
 .hdr-in{position:relative;gap:clamp(16px,2vw,32px)}
 .brand{gap:12px;font-size:15px;letter-spacing:.15em;position:relative;z-index:1}
-.brand-logo{width:48px;height:48px;max-width:48px;object-fit:contain;padding:3px;border-radius:50%;background:rgba(255,255,255,.94);box-shadow:0 5px 14px rgba(0,0,0,.24),0 0 0 1px rgba(201,168,76,.7);filter:drop-shadow(0 2px 4px rgba(0,0,0,.14))}
+.brand-logo{width:58px;height:58px;max-width:58px;object-fit:contain;padding:3px;border-radius:50%;background:rgba(255,255,255,.94);box-shadow:0 5px 14px rgba(0,0,0,.24),0 0 0 1px rgba(201,168,76,.7);filter:drop-shadow(0 2px 4px rgba(0,0,0,.14))}
 .brand small{margin-top:4px;font-size:10px;letter-spacing:.24em;color:rgba(255,255,255,.72)}
 .hdr.scrolled,.hdr.open{height:68px;background:rgba(5,10,28,.96);border-bottom-color:rgba(201,168,76,.22)}
 .hdr.scrolled .brand{font-size:14px}.hdr.scrolled .brand-logo{width:40px;height:40px;padding:2px}.hdr.scrolled .brand small{font-size:9px}

@@ -60,25 +60,25 @@ function loadData() {
 /* ------------------------------------------------------------ menu */
 const MENU = [
   { t: 'L’Alliance', cols: [{ h: 'L’alliance', l: [
-    ['presentation.html', 'Présentation de Lutèce Group', 'Notre alliance, notre accompagnement'],
-    ['reglement.html', 'Le règlement de l’Alliance', 'Le cadre commun de nos membres'],
-    ['forfaits.html', 'Nos forfaits', 'Choisir la formule adaptée à votre activité'],
-    ['articles.html', 'Actualités', 'Les nouvelles de l’alliance']] }] },
+    ['presentation.html', 'Présentation de Lutèce Group', 'Ce que fait l’Alliance et comment elle fonctionne'],
+    ['reglement.html', 'Le règlement de l’Alliance', 'Les règles applicables à tous les membres'],
+    ['forfaits.html', 'Nos forfaits', 'Les services et cotisations Standard et Ultimate'],
+    ['articles.html', 'Actualités', 'Les dernières informations de l’Alliance']] }] },
   { t: 'Location', cols: [
     { h: 'Louer', l: [
-      ['pole-location.html', 'Pôle Location', 'Une flotte à votre disposition'],
-      ['pole-location.html#tarifs', 'Tarifs de location', 'Une tarification claire et flexible'],
-      ['pole-location.html#sal', 'Service Après Location', 'Un accompagnement pendant toute la location']] },
-    { h: 'Notre parc', l: [['parc.html', 'Notre Parc', 'Explorer les véhicules disponibles']] }] },
+      ['pole-location.html', 'Pôle Location', 'Les conditions de location et le suivi du parc'],
+      ['pole-location.html#tarifs', 'Tarifs de location', 'Les tarifs à la semaine et au mois'],
+      ['pole-location.html#sal', 'Service Après Location', 'Pannes, révisions et contrôles techniques']] },
+    { h: 'Notre parc', l: [['parc.html', 'Notre Parc', 'Les véhicules disponibles à la location']] }] },
   { t: 'Exploitation & finance', cols: [
     { h: 'Exploitation', l: [
-      ['pole-exploitation.html', 'Pôle Exploitation', 'Les ressources pour faire avancer votre réseau'],
-      ['pole-exploitation.html#interimaires', 'Demande d’intérimaires', 'Conducteurs et mécaniciens selon vos besoins'],
-      ['pole-exploitation.html#ateliers', 'Ateliers de l’Alliance', 'Réparer, entretenir et repartir sereinement']] },
+      ['pole-exploitation.html', 'Pôle Exploitation', 'Intérimaires, ateliers et demandes de service'],
+      ['pole-exploitation.html#interimaires', 'Demande d’intérimaires', 'Conducteurs et mécaniciens'],
+      ['pole-exploitation.html#ateliers', 'Ateliers de l’Alliance', 'Réparations, révisions et véhicules de remplacement']] },
     { h: 'Financement', l: [
-      ['pole-financement.html', 'Pôle Financement', 'Soutenir vos investissements et votre développement'],
-      ['pole-financement.html#gold', 'Programme GOLD', 'Des avantages négociés pour les membres'],
-      ['pole-financement.html#renovations', 'Rénovations', 'Valoriser durablement votre flotte']] }] }
+      ['pole-financement.html', 'Pôle Financement', 'CT, révisions, FCO et rénovations'],
+      ['pole-financement.html#gold', 'Programme GOLD', 'Daimler Buses et VDI Star'],
+      ['pole-financement.html#renovations', 'Rénovations', 'Prises en charge intérieures et techniques']] }] }
 ];
 const here = location.pathname.split('/').pop() || 'index.html';
 
