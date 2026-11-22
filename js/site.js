@@ -24,6 +24,9 @@ setTheme(storedTheme() || (matchMedia('(prefers-color-scheme: dark)').matches ? 
 const $ = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => Array.from(c.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Les URLs provenant du contenu administrable ne sont jamais interpolées sans
+// validation. Cela évite qu'une valeur mal formée casse l'attribut style ou un lien.
+const httpUrl = value => { try { const u = new URL(String(value || '')); return /^https?:$/.test(u.protocol) ? u.href : ''; } catch (e) { return ''; } };
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const fmt = n => Number(n).toLocaleString('fr-FR');
 const page = (document.body.dataset.page || '');
@@ -252,15 +255,18 @@ function busSVG(cat) {
 function applyData(d) {
   if (!d) return;
   $$('[data-img]').forEach(el => {
-    const u = d.site_images && d.site_images[el.dataset.img];
+    const u = httpUrl(d.site_images && d.site_images[el.dataset.img]);
     if (u) { el.style.backgroundImage = `url("${u}")`; el.classList.remove('noimg'); el.classList.add('has'); }
   });
-  if (d.site_images && d.site_images.logo) $$('img[data-logo]').forEach(img => { img.src = d.site_images.logo; img.hidden = false; const m = img.nextElementSibling; if (m && m.classList.contains('brand-mark')) m.hidden = true; });
+  const logo = httpUrl(d.site_images && d.site_images.logo);
+  if (logo) $$('img[data-logo]').forEach(img => { img.src = logo; img.hidden = false; const m = img.nextElementSibling; if (m && m.classList.contains('brand-mark')) m.hidden = true; });
   $$('[data-link]').forEach(el => {
     const u = d.links && (d.links[el.dataset.link] || (el.dataset.linkAlt && d.links[el.dataset.linkAlt]));
     if (!u) return;
     const a = el.matches('a') ? el : $('a', el);
-    if (a) { a.href = u; a.target = '_blank'; a.rel = 'noopener'; }
+    const url = httpUrl(u);
+    if (!url) return;
+    if (a) { a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
     el.classList.add('ok');
   });
   if (d.stats) {
@@ -268,6 +274,8 @@ function applyData(d) {
       const v = d.stats[el.dataset.stat];
       if (v > 0) { el.dataset.count = v; el.dataset.suffix = ''; el.textContent = fmt(v); }
     });
+    const total = d.stats.total;
+    if (total > 0) $$('[data-parc-title]').forEach(el => { el.textContent = `Un parc de ${fmt(total)} véhicules.`; });
   }
 }
 
@@ -300,14 +308,14 @@ function applyLinks(s) {
   if (!s || !s.links || !s.links.length) return;
   const foot = s.links.filter(l => l.zone !== 'menu');
   const slot = $('#ftr-extra');
-  if (slot) slot.innerHTML = foot.map(l => `<li><a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a></li>`).join('');
+  if (slot) slot.innerHTML = foot.map(l => `<li><a href="${esc(httpUrl(l.url))}" target="_blank" rel="noopener noreferrer">${esc(l.label)}</a></li>`).join('');
   const men = s.links.filter(l => l.zone === 'menu');
   const nav = $('.nav');
   if (men.length && nav && !$('#nav-extra')) {
     const div = document.createElement('div');
     div.className = 'nav-i'; div.id = 'nav-extra';
     div.innerHTML = `<button class="nav-b" type="button" aria-haspopup="true">Liens <i class="fa-solid fa-chevron-down"></i></button>
-      <div class="mega"><div class="mega-col"><h4>Liens utiles</h4>${men.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener"><b>${esc(l.label)}</b></a>`).join('')}</div></div>`;
+      <div class="mega"><div class="mega-col"><h4>Liens utiles</h4>${men.map(l => `<a href="${esc(httpUrl(l.url))}" target="_blank" rel="noopener noreferrer"><b>${esc(l.label)}</b></a>`).join('')}</div></div>`;
     nav.insertBefore(div, $('.hdr-cta', nav));
     $('.nav-b', div).addEventListener('click', () => { if (innerWidth <= 1060) div.classList.toggle('open'); });
   }
@@ -337,11 +345,12 @@ function showPopup(s) {
   try { if (localStorage.getItem('lg_popup') === sig) return; } catch (e) {}
   const el = document.createElement('div');
   el.className = 'popup'; el.id = 'popup'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'popup-t');
+  const image = httpUrl(p.image), link = httpUrl(p.lien);
   el.innerHTML = `<div class="popup-bg" data-close></div><div class="popup-box">
     <button class="popup-x" type="button" data-close aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
-    ${p.image ? `<div class="popup-img" style="background-image:url('${esc(p.image)}')"></div>` : ''}
+    ${image ? `<div class="popup-img" style="background-image:url('${esc(image)}')"></div>` : ''}
     <div class="popup-body"><h2 id="popup-t">${esc(p.titre)}</h2>${p.texte ? `<p>${esc(p.texte).replace(/\n/g, '<br>')}</p>` : ''}
-    <div class="popup-act">${p.lien ? `<a class="btn btn-gold" href="${esc(p.lien)}" target="_blank" rel="noopener">${esc(p.bouton || 'En savoir plus')}</a>` : ''}<button class="btn btn-ghost" type="button" data-close>Fermer</button></div></div></div>`;
+    <div class="popup-act">${link ? `<a class="btn btn-gold" href="${esc(link)}" target="_blank" rel="noopener noreferrer">${esc(p.bouton || 'En savoir plus')}</a>` : ''}<button class="btn btn-ghost" type="button" data-close>Fermer</button></div></div></div>`;
   const close = () => {
     el.classList.remove('on');
     try { localStorage.setItem('lg_popup', sig); } catch (e) {}
@@ -358,8 +367,9 @@ function showPopup(s) {
 }
 
 function artCard(a, i) {
+  const image = httpUrl(a.image);
   return `<a class="acard rv" style="--d:${(i % 3) * 80}ms" href="${BASE}article.html?s=${encodeURIComponent(a.slug)}">
-    <div class="acard-img${a.image ? '' : ' noimg'}"${a.image ? ` style="background-image:url('${esc(a.image)}')"` : ''}></div>
+    <div class="acard-img${image ? '' : ' noimg'}"${image ? ` style="background-image:url('${esc(image)}')"` : ''}></div>
     <div class="acard-b"><span class="chip-k">${esc(a.categorie || 'Actualité')}</span><h3>${esc(a.titre)}</h3>
       <p>${esc(a.resume)}</p><small>${esc(fmtDay(a.date))}${a.auteur ? ' · ' + esc(a.auteur) : ''}</small></div></a>`;
 }
@@ -399,7 +409,8 @@ async function pageArticle() {
   document.title = a.titre + ' — Lutèce Group';
   t.textContent = a.titre;
   $('#art-meta').textContent = fmtDay(a.date) + (a.auteur ? ' · ' + a.auteur : '');
-  if (a.image) { const im = $('#art-img'); im.style.backgroundImage = `url("${a.image}")`; im.hidden = false; }
+  const image = httpUrl(a.image);
+  if (image) { const im = $('#art-img'); im.style.backgroundImage = `url("${image}")`; im.hidden = false; }
   $('#art-body').innerHTML = paragraphs(a.contenu);
 }
 
