@@ -24,7 +24,8 @@ function articleOut(a, full) {
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.setHeader('Allow', 'GET, HEAD'); res.status(405).end(); return; }
-  const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
+  const { SUPABASE_URL } = process.env;
+  const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY;
   const out = { generated_at: new Date().toISOString(), articles: [], article: null, popup: null, links: [], discord: null, warnings: [] };
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) { out.warnings.push('db-config'); res.setHeader('Cache-Control', 'no-store'); res.status(200).json(out); return; }
   const base = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/';
