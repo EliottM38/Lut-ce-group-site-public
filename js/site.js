@@ -336,6 +336,29 @@ function applyReglement(s) {
   if (rg.version) $$('[data-reglement-version]').forEach(el => { el.textContent = rg.version; });
 }
 
+function applyStudioSettings(s) {
+  if (!s) return;
+  const hex = v => /^#[0-9a-f]{6}$/i.test(String(v || '')) ? v : '';
+  if (s.theme) {
+    const navy = hex(s.theme.navy), gold = hex(s.theme.gold), accent = hex(s.theme.accent);
+    if (navy) { root.style.setProperty('--navy', navy); root.style.setProperty('--ink', navy); }
+    if (gold) { root.style.setProperty('--gold', gold); root.style.setProperty('--gold-2', gold); }
+    if (accent) root.style.setProperty('--accent', accent);
+  }
+  const b = s.brand || {};
+  if (b.name) $$(' .brand > span, .brand span').forEach(el => { if (el.parentElement && el.parentElement.classList.contains('brand')) el.firstChild.textContent = b.name; });
+  if (b.slogan) $$('.brand small').forEach(el => { el.textContent = b.slogan; });
+  if (b.logo) $$('img[data-logo]').forEach(el => { el.src = httpUrl(b.logo) || el.src; });
+  if (b.cta) $$('.hdr-cta').forEach(el => { el.textContent = b.cta; });
+  const p = s.pages && s.pages[here];
+  if (p) {
+    if (p.title) { const h = $('h1'); if (h) h.textContent = p.title; document.title = p.title + ' — ' + (b.name || 'Lutèce Group'); }
+    if (p.intro) { const lead = $('.phero .lead,.hero .lead'); if (lead) lead.textContent = p.intro; }
+    if (p.description) { let d = $('meta[name="description"]'); if (!d) { d = document.createElement('meta'); d.name = 'description'; document.head.appendChild(d); } d.content = p.description; }
+  }
+  if (s.seo && s.seo.title && here === 'index.html') document.title = s.seo.title;
+}
+
 function discordHTML(dc) {
   return `<iframe title="Discord de Lutèce Group" src="https://discord.com/widget?id=${encodeURIComponent(dc.id)}&theme=${dc.theme}" width="350" height="500" allowtransparency="true" frameborder="0" loading="lazy" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>`;
 }
@@ -679,7 +702,7 @@ function init() {
   addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll); onScroll();
   requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('loaded')));
   loadSite().then(st => {
-    applyLinks(st); applyReglement(st); mountDiscord(st); showPopup(st);
+    applyStudioSettings(st); applyLinks(st); applyReglement(st); mountDiscord(st); showPopup(st);
     if (page === 'home') pageHomeNews(st);
     if (page === 'articles') pageArticles(st);
     observeReveal(); onScroll();
