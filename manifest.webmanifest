@@ -1,0 +1,9 @@
+{
+  "name": "Lutèce Group",
+  "short_name": "Lutèce Group",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080f28",
+  "theme_color": "#080f28",
+  "icons": [{"src": "/images/logo.png", "sizes": "397x300", "type": "image/png"}]
+}
