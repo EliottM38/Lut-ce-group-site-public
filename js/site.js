@@ -424,7 +424,14 @@ function pageArticles(s) {
   const g = $('#agrid'); if (!g) return;
   const list = s && s.articles || [];
   if (!list.length) { g.innerHTML = `<div class="empty"><b>Aucun article pour le moment</b>Les actualités de l’alliance apparaîtront ici.</div>`; return; }
-  g.innerHTML = list.map(artCard).join('');
+  const featured = list[0], feature = $('#news-feature'), toolbar = $('#news-toolbar');
+  const image = httpUrl(featured.image);
+  if (feature) feature.innerHTML = `<a class="news-feature rv" href="${BASE}article.html?s=${encodeURIComponent(featured.slug)}"><div class="news-feature-img${image ? '' : ' noimg'}"${image ? ` style="background-image:url('${esc(image)}')"` : ''}></div><div><span class="chip-k">À la une · ${esc(featured.categorie || 'Actualité')}</span><h2>${esc(featured.titre)}</h2><p>${esc(featured.resume)}</p><small>${esc(fmtDay(featured.date))}${featured.auteur ? ' · ' + esc(featured.auteur) : ''}</small><b class="news-read">Lire l’article <i class="fa-solid fa-arrow-right"></i></b></div></a>`;
+  const cats = Array.from(new Set(list.map(a => a.categorie || 'Actualité')));
+  let active = 'Tout';
+  function render(){ const rest = list.slice(1).filter(a => active === 'Tout' || (a.categorie || 'Actualité') === active); g.innerHTML = rest.length ? rest.map(artCard).join('') : '<div class="empty"><b>Aucun article dans cette catégorie</b>Choisissez une autre catégorie.</div>'; observeReveal(g); }
+  if (toolbar) { toolbar.hidden = false; toolbar.innerHTML = ['Tout'].concat(cats).map(c => `<button class="chip${c === active ? ' on' : ''}" type="button">${esc(c)}</button>`).join(''); toolbar.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; active = b.textContent; $$('button', toolbar).forEach(x => x.classList.toggle('on', x === b)); render(); }); }
+  render();
 }
 
 function paragraphs(txt) {
