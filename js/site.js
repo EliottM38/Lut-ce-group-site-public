@@ -125,7 +125,7 @@ function footerHTML() {
       <span class="lg"><a href="${BASE}mentions-legales.html">Mentions légales</a><a href="${BASE}confidentialite.html">Confidentialité</a><a href="${BASE}cgv-cgu.html">CGV / CGU</a></span></div>
   </div></footer>
   <button class="to-top" id="to-top" type="button" aria-label="Retour en haut de la page"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
-  <dialog class="sdlg" id="sdlg" aria-label="Recherche sur le site"><form method="dialog" id="sform" role="search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="sq" type="search" placeholder="Rechercher une page ou un modèle de bus…" aria-label="Rechercher" autocomplete="off"><button class="sx" value="close" aria-label="Fermer la recherche">Échap</button></form><div class="sres" id="sres" aria-live="polite"></div></dialog>`;
+  <dialog class="sdlg" id="sdlg" closedby="any" aria-label="Recherche sur le site"><form method="dialog" id="sform" role="search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="sq" type="search" placeholder="Rechercher une page ou un modèle de bus…" aria-label="Rechercher" autocomplete="off"><button class="sx" value="close" aria-label="Fermer la recherche">Échap</button></form><div class="sres" id="sres" aria-live="polite"></div></dialog>`;
 }
 
 function mountChrome() {
@@ -200,7 +200,12 @@ function mountSearch() {
     else if (e.key === 'ArrowUp') { e.preventDefault(); sel = (sel - 1 + n) % n; mark(); }
     else if (e.key === 'Enter') { e.preventDefault(); const a = links()[sel < 0 ? 0 : sel]; if (a) location.href = a.href; }
   });
-  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  if (!('closedBy' in HTMLDialogElement.prototype)) {
+    const outside = e => { const r = dlg.getBoundingClientRect(); return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom; };
+    let pressedOutside = false;
+    dlg.addEventListener('pointerdown', e => { pressedOutside = outside(e); });
+    dlg.addEventListener('pointerup', e => { if (pressedOutside && outside(e)) dlg.close(); pressedOutside = false; });
+  }
   if (btn) btn.addEventListener('click', open);
   addEventListener('keydown', e => {
     const tag = (document.activeElement && document.activeElement.tagName) || '';
@@ -590,7 +595,8 @@ function pageHome(d) {
     rail.innerHTML = `<div class="empty" style="flex:1 1 100%;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.18);color:rgba(255,255,255,.7)"><b style="color:#fff">Le catalogue arrive bientôt</b>Les véhicules de l’alliance sont en cours de mise en ligne.</div>`;
     return;
   }
-  const list = d.models.slice().sort((a, b) => ((b.photos || []).length - (a.photos || []).length) || (b.quantite - a.quantite)).slice(0, 10);
+  const compare = (a, b) => ((b.photos || []).length - (a.photos || []).length) || (b.quantite - a.quantite);
+  const list = (d.models.toSorted ? d.models.toSorted(compare) : d.models.slice().sort(compare)).slice(0, 10);
   rail.innerHTML = list.map((m, i) => cardHTML(m, d, i)).join('');
 }
 

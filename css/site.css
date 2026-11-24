@@ -156,6 +156,11 @@ h1,h2,h3,h4{font-weight:700;letter-spacing:-.03em;line-height:1.06;color:inherit
 .pole h3{margin:10px 0 12px}
 .pole p{font-size:15px;color:rgba(255,255,255,.76);max-height:0;opacity:0;overflow:hidden;transition:max-height .8s var(--ease),opacity .6s}
 .pole:hover p,.pole:focus-visible p{max-height:120px;opacity:1}
+@supports (interpolate-size:allow-keywords){
+  .pole{interpolate-size:allow-keywords}
+  .pole p{max-height:none;block-size:0;transition:block-size .8s var(--ease),opacity .6s}
+  .pole:hover p,.pole:focus-visible p{block-size:auto}
+}
 .pole .arrow{display:inline-grid;place-items:center;width:44px;height:44px;margin-top:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);transition:transform .6s var(--spring),background-color .3s,color .3s}
 .pole:hover .arrow{background:var(--gold-2);color:var(--ink);border-color:var(--gold-2);transform:translateX(6px)}
 
@@ -354,7 +359,7 @@ li[data-link].ok{display:list-item}
   .toc{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:6px}
   .toc a{flex:0 0 auto;white-space:nowrap}
   .ftr-top{grid-template-columns:1fr 1fr}
-  .pole p{max-height:none;opacity:1}
+  .pole p{max-height:none;block-size:auto;opacity:1}
 }
 @media(max-width:680px){
   .home-path{margin-top:-18px}.home-path-grid{border-radius:18px}.home-path-grid a{padding:17px}.news-feature{border-radius:22px}.news-feature-img{min-height:220px}.news-feature>div:last-child{padding:28px}.news-feature h2{font-size:2rem}.news-toolbar{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.plan-jump{align-items:flex-start;flex-direction:column}.plan-jump a{width:100%}
