@@ -565,7 +565,7 @@ function scrollspy() {
 /* ------------------------------------------------------------ catalogue */
 const ENG = { 'Diesel': 'fa-gas-pump', 'Hybride': 'fa-leaf', 'Électrique': 'fa-bolt', 'GNV': 'fa-fire-flame-simple', 'Hydrogène': 'fa-droplet' };
 const engIcon = m => ENG[m] || 'fa-gas-pump';
-const TKEY = { 'Minibus': 'minibus', 'Midibus': 'midibus', 'Standards': 'standard', 'Articulés': 'articule', 'LE & Cars': 'carle' };
+const TKEY = { 'Minibus': 'minibus', 'Midibus': 'midibus', 'Standards': 'standard', 'Articulés': 'articule', 'BHNS': 'bhns', 'LE & Cars': 'carle' };
 function tarifOf(cat, d) { const k = TKEY[cat]; return k && d && d.tarifs ? d.tarifs.find(t => t.cle === k) : null; }
 function yearsOf(m) { const y = Object.keys(m.annees || {}).sort(); return !y.length ? '' : (y.length === 1 ? y[0] : y[0] + ' – ' + y[y.length - 1]); }
 function fmtDate(s) { return s ? s.split('-').reverse().join('/') : ''; }
@@ -633,14 +633,6 @@ function pageParc(d) {
   render();
 }
 
-// Jauge d'état : vert ≥ 70 %, orange ≥ 40 %, rouge en dessous. Valeur absente → tiret.
-function meterHTML(v, label) {
-  if (v == null) return '<span style="color:var(--muted)">—</span>';
-  const c = v >= 70 ? '' : v >= 40 ? ' mid' : ' low';
-  return `<div class="meter${c}" role="img" aria-label="${esc(label)} : ${v} %"><i style="--v:${v}%"></i><b>${v} %</b></div>`;
-}
-const fmtKm = n => n == null ? '—' : fmt(n) + ' km';
-
 function pageModele(d) {
   const out = $('#fiche'); if (!out) return;
   const key = new URLSearchParams(location.search).get('m') || '';
@@ -664,9 +656,7 @@ function pageModele(d) {
     ['Places', m.places], ['Portes', m.portes], ['Consommation', m.conso], ['Climatisation / ventilation', m.clim], ['Accessibilité', m.accessibilite], ['Options', m.options], ['Au parc', m.quantite + ' véhicule' + (m.quantite > 1 ? 's' : '')]]
     .filter(x => x[1]).map(x => `<div><span>${esc(x[0])}</span><b>${esc(x[1])}</b></div>`).join('');
   const sCls = { 'Disponible': 's-disp', 'En préparation': 's-prep', 'Aux ateliers': 's-atel', 'En location': 's-loc' };
-  const hasEtat = vs.some(v => v.etat_tech != null || v.etat_int != null || v.km != null);
   const rows = vs.sort((a, b) => String(a.ref).localeCompare(String(b.ref), 'fr', { numeric: true })).map(v => `<tr><td><b>${esc(v.ref || '—')}</b></td><td>${esc(v.annee || '—')}</td><td>${esc(v.moteur || '—')}</td>
-    ${hasEtat ? `<td>${meterHTML(v.etat_tech, 'État technique')}</td><td>${meterHTML(v.etat_int, 'État intérieur')}</td><td class="km">${fmtKm(v.km)}</td>` : ''}
     <td>${v.statut ? `<span class="badge ${sCls[v.statut] || ''}">${esc(v.statut)}</span>${v.retour ? ` <small style="color:var(--muted)">retour le ${fmtDate(v.retour)}</small>` : ''}` : '<span style="color:var(--muted)">—</span>'}</td></tr>`).join('');
   const tar = t ? `<div class="tbl-w"><table class="tbl"><thead><tr><th>Durée</th><th>Standard</th><th class="col-u">Ultimate</th></tr></thead><tbody>
       <tr><td>À la semaine</td><td><b>${fmt(t.s)} €</b></td><td class="col-u">Gratuit*</td></tr>
@@ -682,8 +672,8 @@ function pageModele(d) {
     </aside></div></div>
     <section class="sec sec--soft" style="margin-top:clamp(64px,9vw,120px)"><div class="wrap"><div class="head rv"><span class="eyebrow">Tarifs</span><h2 class="h-md">Louer ce modèle</h2></div><div class="rv">${tar}</div></div></section>
     ${rows ? `<section class="sec"><div class="wrap"><div class="head rv"><span class="eyebrow">Au parc</span><h2 class="h-md">Les ${vs.length} véhicule${vs.length > 1 ? 's' : ''} de ce modèle</h2></div>
-      <div class="tbl-w rv"><table class="tbl"><thead><tr><th>N° de parc</th><th>Mise en service</th><th>Motorisation</th>${hasEtat ? '<th>État technique</th><th>État intérieur</th><th>Kilométrage</th>' : ''}<th>Disponibilité</th></tr></thead><tbody>${rows}</tbody></table></div>
-      ${hasEtat ? '<p class="vh-note">États exprimés en pourcentage : plus la barre est pleine, meilleur est l’état. Données issues de Transport Manager, mises à jour régulièrement.</p>' : ''}</div></section>` : ''}
+      <div class="tbl-w rv"><table class="tbl"><thead><tr><th>N° de parc</th><th>Mise en service</th><th>Motorisation</th><th>Disponibilité</th></tr></thead><tbody>${rows}</tbody></table></div>
+      </div></section>` : ''}
     ${similar.length ? `<section class="sec sec--dark"><div class="wrap" data-rail><div class="rail-top"><div><span class="eyebrow">Dans la même catégorie</span><h2 class="h-md" style="margin-top:14px">D’autres ${esc(m.categorie)}</h2></div>
       <div class="rail-ctl"><button data-prev aria-label="Précédent"><i class="fa-solid fa-arrow-left"></i></button><button data-next aria-label="Suivant"><i class="fa-solid fa-arrow-right"></i></button></div></div>
       <div class="rail">${similar.map((x, i) => cardHTML(x, d, i)).join('')}</div></div></section>` : ''}`;

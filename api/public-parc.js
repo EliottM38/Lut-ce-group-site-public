@@ -159,7 +159,9 @@ function fromTM(v) {
     etat_tech: pctOf(pick(v, ['etat_technique', 'etat_moteur', 'etat_mecanique', 'usure_technique', 'etat_tech'])),
     etat_int: pctOf(pick(v, ['etat_interieur', 'etat_int', 'usure_interieur', 'etat_habitacle'])),
     km: kmOf(pick(v, ['kilometrage', 'kilometres', 'km', 'compteur', 'odometre'])),
-    statut: statusLabel(pick(v, ['disponibilite', 'disponibilité', 'statut_disponibilite', 'statut', 'status'])), retour: dateOf(pick(v, ['date_fin', 'fin', 'retour']))
+    // TM renseigne l'état opérationnel ici (disponible, location, atelier…).
+    // Cet état est distinct du seul nom du parc utilisé par l'endpoint location.
+    statut: statusLabel(pick(v, ['disponibilite', 'disponibilité', 'statut_disponibilite', 'statut', 'etat', 'status'])), retour: dateOf(pick(v, ['date_fin', 'fin', 'retour']))
   };
 }
 
@@ -197,6 +199,7 @@ const TARIF_DEFAUT = {
   midibus:  { j: 200, s: 1200, m: 4000 },
   standard: { j: 250, s: 1500, m: 5000 },
   articule: { j: 300, s: 1800, m: 6000 },
+  bhns:     { j: 250, s: 1500, m: 5000 },
   carle:    { j: 250, s: 1500, m: 5000 }
 };
 const TARIF_META = [
@@ -204,6 +207,7 @@ const TARIF_META = [
   ['midibus',  'Midibus',          'Midibus',   ''],
   ['standard', 'Standards',        'Standards', ''],
   ['articule', 'Articulés',        'Articulés', ''],
+  ['bhns',     'BHNS',             'BHNS',      'À partir du N3'],
   ['carle',    'Cars | LE',        'LE & Cars', 'À partir du N4']
 ];
 
@@ -429,9 +433,8 @@ export default async function handler(req, res) {
     vehicles: vehicles.map(v => ({
       ref: v.ref, cle: v.cle, categorie: v.categorie, marque: v.marque, modele: v.modele,
       moteur: v.moteur, annee: v.annee, statut: v.statut, retour: v.retour,
-      etat_tech: Number.isFinite(v.etat_tech) ? v.etat_tech : null,
-      etat_int: Number.isFinite(v.etat_int) ? v.etat_int : null,
-      km: Number.isFinite(v.km) ? v.km : null
+      // Les données d'état technique et kilométrage restent utilisées en
+      // interne, mais ne sont pas exposées aux visiteurs du site public.
     })),
     tarifs: buildTarifs(tarifRows),
     site_images: siteImages,
