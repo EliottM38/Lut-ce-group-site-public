@@ -366,10 +366,7 @@ export default async function handler(req, res) {
     if (locationReturn !== undefined) { v.statut = 'En location'; v.retour = locationReturn; }
     v.cle = v.cleRaw || cleOf(v.marque, v.modele); delete v.cleRaw;
     if (cfg.parc_categories && CATEGORIES.includes(cfg.parc_categories[v.cle])) v.categorie = cfg.parc_categories[v.cle];
-    // Un véhicule reçu dans le parc global sans état particulier est disponible.
-    // Cela permet d'afficher un total cohérent quand TM ne renseigne le statut
-    // que dans son endpoint « location ».
-    if (!v.statut) v.statut = 'Disponible';
+    // Un statut absent ne permet pas de conclure que le véhicule est disponible.
     if (v.statut !== 'En location') v.retour = '';
   }
 
