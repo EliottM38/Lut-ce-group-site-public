@@ -18,6 +18,9 @@ const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '')
 // IMPORTANT : même algorithme que pubCle() dans index.html (gestion)
 const cleOf = (marque, modele) => norm(marque) + '|' + norm(modele);
 const flat = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+// Les références TM peuvent être des nombres, des chaînes ou contenir des espaces.
+// Une clé stable évite de rater un véhicule loué lors de la fusion global/location.
+const refKey = value => String(value ?? '').trim().toLowerCase().replace(/[\s._-]+/g, '');
 
 function pick(obj, aliases) {
   if (!obj || typeof obj !== 'object') return '';
@@ -219,7 +222,7 @@ export default async function handler(req, res) {
     const base = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/';
     dbBase = base; dbH = h;
     const [a, b, c] = await Promise.allSettled([
-      getJSON(base + 'app_config?select=key,value&key=in.(site_links,parc_sheet_urls,parc_cache,parc_categories)', h),
+      getJSON(base + 'app_config?select=key,value&key=in.(site_links,parc_sheet_urls,parc_cache,parc_categories,parc_manual,parc_overrides)', h),
       getJSON(base + 'tarifs?select=key,value', h),
       getJSON(base + 'parc_photos?select=cle,storage_path,ordre&order=ordre.asc,created_at.asc', h)
     ]);
@@ -259,7 +262,7 @@ export default async function handler(req, res) {
     const diag = {};
     if (glob.status === 'fulfilled') {
       const items = asList(glob.value).map(fromTM).filter(v => v.ref || v.modele);
-      items.forEach(v => byRefTM.set(v.ref || Symbol(), v));
+      items.forEach(v => byRefTM.set(refKey(v.ref) || Symbol(), v));
       diag.global = items.length; diag.global_keys = Object.keys(asList(glob.value)[0] || {}).slice(0, 40); diag.global_meta = meta(glob.value);
     } else warnings.push('tm[' + baseHost + ']: ' + String(glob.reason && glob.reason.message || glob.reason).slice(0, 80));
     locOk = loc.status === 'fulfilled';
@@ -269,8 +272,9 @@ export default async function handler(req, res) {
       for (const raw of items) {
         const ref = refOf(raw);
         const fin = dateOf(pick(raw, ['date_fin', 'fin', 'retour']));
-        if (ref) enLocation.set(ref, fin);
-        if (!byRefTM.has(ref)) { const v = fromTM(raw); if (v.ref || v.modele) byRefTM.set(v.ref || Symbol(), v); }
+        const key = refKey(ref);
+        if (key) enLocation.set(key, fin);
+        if (!byRefTM.has(key)) { const v = fromTM(raw); if (v.ref || v.modele) byRefTM.set(refKey(v.ref) || Symbol(), v); }
       }
     } else warnings.push('tm-location: ' + String(loc.reason && loc.reason.message || loc.reason).slice(0, 80));
     list = [...byRefTM.values()];
@@ -291,7 +295,7 @@ export default async function handler(req, res) {
         });
       } catch (e) {}
     } else if (cfg.parc_cache && Array.isArray(cfg.parc_cache.list) && cfg.parc_cache.list.length) {
-      list = cfg.parc_cache.list; sources.tm = true; warnings.push('tm: dernière liste connue (cache)');
+      list = cfg.parc_cache.list; sources.cache = true; warnings.push('tm: dernière liste connue (sauvegarde)');
     }
   }
 
@@ -312,21 +316,54 @@ export default async function handler(req, res) {
   }));
   sources.sheet = sheetRows.length > 0;
 
-  // 4) Fusion par numéro de parc : le Sheet complète/écrase statut, retour, détails
+  // 4) Fusion par numéro de parc : le Sheet complète/écrase statut, retour, détails.
+  // Les locations TM sont appliquées ici, après le repli cache : c'est la source
+  // la plus fiable pour la disponibilité du jour.
   const byRef = new Map();
   const noRef = [];
-  for (const v of list) (v.ref ? byRef.set(v.ref, v) : noRef.push(v));
+  for (const v of list) (v.ref ? byRef.set(refKey(v.ref), v) : noRef.push(v));
   for (const s of sheetRows) {
-    const base = s.ref ? byRef.get(s.ref) : null;
+    const key = refKey(s.ref);
+    const base = key ? byRef.get(key) : null;
     if (base) {
       for (const [k, val] of Object.entries(s)) if (val || (typeof val === 'number' && val === 0)) base[k] = val;
-    } else if (s.ref) byRef.set(s.ref, s); else noRef.push(s);
+    } else if (key) byRef.set(key, s); else noRef.push(s);
+  }
+
+  // Saisie manuelle : sert autant à corriger un statut qu'à garder un véhicule
+  // visible si TM est indisponible longtemps. Les valeurs manuelles passent après
+  // les imports, mais les informations de location TM restent prioritaires.
+  const manualRows = Array.isArray(cfg.parc_manual) ? cfg.parc_manual : [];
+  for (const raw of manualRows) {
+    if (!raw || typeof raw !== 'object') continue;
+    const manual = fromTM(raw);
+    const key = refKey(manual.ref);
+    if (key && byRef.has(key)) Object.assign(byRef.get(key), Object.fromEntries(Object.entries(manual).filter(([, v]) => v !== '' && v !== null)));
+    else if (key) byRef.set(key, manual);
+    else if (manual.modele) noRef.push(manual);
   }
   const vehicles = [...byRef.values(), ...noRef];
   for (const v of vehicles) {
+    const locationReturn = enLocation.get(refKey(v.ref));
+    if (locationReturn !== undefined) { v.statut = 'En location'; v.retour = locationReturn; }
     v.cle = v.cleRaw || cleOf(v.marque, v.modele); delete v.cleRaw;
     if (cfg.parc_categories && CATEGORIES.includes(cfg.parc_categories[v.cle])) v.categorie = cfg.parc_categories[v.cle];
+    // Un véhicule reçu dans le parc global sans état particulier est disponible.
+    // Cela permet d'afficher un total cohérent quand TM ne renseigne le statut
+    // que dans son endpoint « location ».
+    if (!v.statut) v.statut = 'Disponible';
     if (v.statut !== 'En location') v.retour = '';
+  }
+
+  // Les corrections de disponibilité décidées par le gestionnaire restent
+  // applicables même pendant une panne TM. Elles sont volontairement finales.
+  const overrides = cfg.parc_overrides && typeof cfg.parc_overrides === 'object' ? cfg.parc_overrides : {};
+  for (const v of vehicles) {
+    const override = overrides[refKey(v.ref)];
+    if (!override || typeof override !== 'object') continue;
+    const statut = statusLabel(override.statut);
+    if (statut) v.statut = statut;
+    v.retour = v.statut === 'En location' ? dateOf(override.retour) : '';
   }
 
   // 5) Modèles agrégés (catalogue)
