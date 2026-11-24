@@ -91,10 +91,10 @@ function yearOf(v) {
 function dateOf(v) {
   const s = String(v ?? '').trim();
   if (!s) return '';
-  const d = new Date(s);
-  if (!isNaN(d)) return d.toISOString().slice(0, 10);
   const m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
   if (m) { const y = m[3].length === 2 ? '20' + m[3] : m[3]; return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; }
+  const d = new Date(s);
+  if (!isNaN(d)) return d.toISOString().slice(0, 10);
   return '';
 }
 
@@ -118,6 +118,7 @@ function statusLabel(v) {
   if (/dispo/.test(t)) return 'Disponible';
   if (/prepa/.test(t)) return 'En préparation';
   if (/atelier|panne|repar/.test(t)) return 'Aux ateliers';
+  if (/^sur parc location\b/.test(t)) return 'Disponible';
   if (/location|loue/.test(t)) return 'En location';
   return '';
 }
@@ -144,6 +145,8 @@ function fromTM(v) {
   const modeleRaw = pick(v, ['modele', 'model', 'nom_modele', 'designation', 'nom']);
   const marque = unent(marqueRaw), modele = unent(modeleRaw);
   const type = pick(v, ['categorie', 'category', 'type_vehicule', 'type', 'genre']);
+  const operational = statusLabel(pick(v, ['disponibilite', 'statut_disponibilite', 'statut', 'etat', 'status']));
+  const patrimoine = statusLabel(pick(v, ['patrimoine']));
   return {
     ref: pick(v, ['numero_parc', 'num_parc', 'n_parc', 'parc_numero', 'numero', 'immatriculation', 'id']),
     marque, modele, cleRaw: cleOf(marqueRaw, modeleRaw),
@@ -161,7 +164,7 @@ function fromTM(v) {
     km: kmOf(pick(v, ['kilometrage', 'kilometres', 'km', 'compteur', 'odometre'])),
     // TM renseigne l'état opérationnel ici (disponible, location, atelier…).
     // Cet état est distinct du seul nom du parc utilisé par l'endpoint location.
-    statut: statusLabel(pick(v, ['disponibilite', 'disponibilité', 'statut_disponibilite', 'statut', 'etat', 'status'])), retour: dateOf(pick(v, ['date_fin', 'fin', 'retour']))
+    statut: operational && operational !== 'Disponible' ? operational : (patrimoine || operational), retour: dateOf(pick(v, ['fin_location', 'date_fin', 'fin', 'retour']))
   };
 }
 
