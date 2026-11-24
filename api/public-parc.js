@@ -122,6 +122,20 @@ function statusLabel(v) {
   return '';
 }
 
+// « parc=location » ne suffit pas à prouver qu'un véhicule est loué : selon
+// les versions de TM, cet endpoint peut aussi contenir tout le parc affecté à
+// la location. On ne retient que ses champs explicitement contractuels.
+function activeRental(raw) {
+  const truthy = value => /^(1|true|oui|yes)$/i.test(String(value ?? '').trim());
+  if (['en_location', 'est_loue', 'loue', 'loué'].some(key => truthy(pick(raw, [key])))) return true;
+  const state = statusLabel(pick(raw, ['statut_location', 'etat_location', 'location_statut', 'statut_contrat', 'contrat_statut']));
+  if (state === 'En location') return true;
+  const renter = pick(raw, ['locataire', 'client_location', 'membre_location', 'entreprise_location', 'contractant']);
+  const start = dateOf(pick(raw, ['date_debut_location', 'debut_location', 'location_debut', 'date_debut_contrat']));
+  const end = dateOf(pick(raw, ['date_fin_location', 'fin_location', 'location_fin', 'date_fin_contrat']));
+  return Boolean(renter && start && (!end || end >= new Date().toISOString().slice(0, 10)));
+}
+
 // ---------- normalisation des véhicules ----------
 const unent = x => String(x == null ? '' : x).replace(/&#0*39;|&apos;/g, "'").replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 
@@ -145,7 +159,7 @@ function fromTM(v) {
     etat_tech: pctOf(pick(v, ['etat_technique', 'etat_moteur', 'etat_mecanique', 'usure_technique', 'etat_tech'])),
     etat_int: pctOf(pick(v, ['etat_interieur', 'etat_int', 'usure_interieur', 'etat_habitacle'])),
     km: kmOf(pick(v, ['kilometrage', 'kilometres', 'km', 'compteur', 'odometre'])),
-    statut: statusLabel(pick(v, ['statut', 'etat', 'status'])), retour: dateOf(pick(v, ['date_fin', 'fin', 'retour']))
+    statut: statusLabel(pick(v, ['disponibilite', 'disponibilité', 'statut_disponibilite', 'statut', 'status'])), retour: dateOf(pick(v, ['date_fin', 'fin', 'retour']))
   };
 }
 
@@ -273,7 +287,7 @@ export default async function handler(req, res) {
         const ref = refOf(raw);
         const fin = dateOf(pick(raw, ['date_fin', 'fin', 'retour']));
         const key = refKey(ref);
-        if (key) enLocation.set(key, fin);
+        if (key && activeRental(raw)) enLocation.set(key, fin);
         if (!byRefTM.has(key)) { const v = fromTM(raw); if (v.ref || v.modele) byRefTM.set(refKey(v.ref) || Symbol(), v); }
       }
     } else warnings.push('tm-location: ' + String(loc.reason && loc.reason.message || loc.reason).slice(0, 80));
@@ -317,8 +331,8 @@ export default async function handler(req, res) {
   sources.sheet = sheetRows.length > 0;
 
   // 4) Fusion par numéro de parc : le Sheet complète/écrase statut, retour, détails.
-  // Les locations TM sont appliquées ici, après le repli cache : c'est la source
-  // la plus fiable pour la disponibilité du jour.
+  // Les locations TM sont appliquées ici, après le repli cache, uniquement si
+  // TM fournit une indication explicite de contrat actif.
   const byRef = new Map();
   const noRef = [];
   for (const v of list) (v.ref ? byRef.set(refKey(v.ref), v) : noRef.push(v));
